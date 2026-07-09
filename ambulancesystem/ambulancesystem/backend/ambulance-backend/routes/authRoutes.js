@@ -79,6 +79,9 @@ router.post('/register', registerLimiter, upload.fields([
     // Generate OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
+    
+    // Log OTP immediately for dev/testing ease in production logs
+    console.log(`[VERIFICATION OTP] For Email: ${email} -> OTP is: ${otp}`);
 
     if (role === 'driver') {
       // DRIVER REGISTRATION

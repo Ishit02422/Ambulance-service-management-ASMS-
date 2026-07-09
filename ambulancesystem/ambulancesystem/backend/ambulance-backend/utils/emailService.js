@@ -8,14 +8,57 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-// Verify connection configuration
-transporter.verify(function (error, success) {
-  if (error) {
-    console.log('Email Service Error:', error);
-  } else {
-    console.log('Email Service is ready to send messages');
+// Verify connection configuration if using SMTP
+if (!process.env.BREVO_API_KEY) {
+  transporter.verify(function (error, success) {
+    if (error) {
+      console.log('Email Service SMTP Error (Optional if using Brevo):', error);
+    } else {
+      console.log('Email Service SMTP is ready to send messages');
+    }
+  });
+} else {
+  console.log('Email Service is using Brevo HTTP API');
+}
+
+// Unified mail sender that handles Brevo API or Nodemailer SMTP fallback
+const sendMailViaHttp = async (mailOptions) => {
+  if (process.env.BREVO_API_KEY) {
+    console.log(`Sending email to ${mailOptions.to} via Brevo HTTP API...`);
+    try {
+      const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: {
+          'accept': 'application/json',
+          'api-key': process.env.BREVO_API_KEY,
+          'content-type': 'application/json'
+        },
+        body: JSON.stringify({
+          sender: {
+            name: "Ambulance Service",
+            email: process.env.EMAIL_USER || 'no-reply@ambulance-service.com'
+          },
+          to: [{ email: mailOptions.to }],
+          subject: mailOptions.subject,
+          htmlContent: mailOptions.html || mailOptions.text
+        })
+      });
+      
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to send email via Brevo');
+      }
+      console.log(`Email successfully sent to ${mailOptions.to} via Brevo HTTP API`);
+      return true;
+    } catch (err) {
+      console.error('Brevo API Error:', err);
+      throw err;
+    }
   }
-});
+  
+  // Fallback to Nodemailer SMTP
+  return transporter.sendMail(mailOptions);
+};
 
 const sendOTP = async (email, otp) => {
   const mailOptions = {
@@ -35,11 +78,11 @@ const sendOTP = async (email, otp) => {
   };
 
   try {
-    await transporter.sendMail(mailOptions);
+    await sendMailViaHttp(mailOptions);
     console.log(`OTP sent to ${email}`);
   } catch (error) {
     console.error('Error sending OTP email:', error);
-    // In development without real creds, we might want to log the OTP to console to allow testing
+    // Log OTP to console to allow registration verification in case of delivery failure
     console.log('DEV MODE - OTP:', otp); 
   }
 };
@@ -62,7 +105,7 @@ const sendWelcomeEmail = async (email, name) => {
   };
 
   try {
-    await transporter.sendMail(mailOptions);
+    await sendMailViaHttp(mailOptions);
     console.log(`Welcome email sent to ${email}`);
   } catch (error) {
     console.error('Error sending welcome email:', error);
@@ -89,7 +132,7 @@ const sendDriverPendingEmail = async (email, name) => {
   };
 
   try {
-    await transporter.sendMail(mailOptions);
+    await sendMailViaHttp(mailOptions);
     console.log(`Driver pending email sent to ${email}`);
   } catch (error) {
     console.error('Error sending driver pending email:', error);
@@ -116,7 +159,7 @@ const sendDriverApprovalEmail = async (email, name) => {
   };
 
   try {
-    await transporter.sendMail(mailOptions);
+    await sendMailViaHttp(mailOptions);
     console.log(`Driver approval email sent to ${email}`);
   } catch (error) {
     console.error('Error sending driver approval email:', error);
@@ -146,7 +189,7 @@ const sendDriverRejectionEmail = async (email, name, reason) => {
   };
 
   try {
-    await transporter.sendMail(mailOptions);
+    await sendMailViaHttp(mailOptions);
     console.log(`Driver rejection email sent to ${email}`);
   } catch (error) {
     console.error('Error sending driver rejection email:', error);
@@ -173,7 +216,7 @@ const sendPasswordResetEmail = async (email, resetUrl) => {
   };
 
   try {
-    await transporter.sendMail(mailOptions);
+    await sendMailViaHttp(mailOptions);
     console.log(`Password reset email sent to ${email}`);
   } catch (error) {
     console.error('Error sending password reset email:', error);
@@ -200,7 +243,7 @@ const sendPasswordResetSuccessEmail = async (email, name) => {
   };
 
   try {
-    await transporter.sendMail(mailOptions);
+    await sendMailViaHttp(mailOptions);
     console.log(`Password reset success email sent to ${email}`);
   } catch (error) {
     console.error('Error sending password reset success email:', error);
@@ -235,7 +278,7 @@ const sendBlockNotificationEmail = async (email, name, reason, duration, userTyp
   };
 
   try {
-    await transporter.sendMail(mailOptions);
+    await sendMailViaHttp(mailOptions);
     console.log(`Block notification email sent to ${email}`);
   } catch (error) {
     console.error('Error sending block notification email:', error);
@@ -262,7 +305,7 @@ const sendUnblockNotificationEmail = async (email, name, userType) => {
   };
 
   try {
-    await transporter.sendMail(mailOptions);
+    await sendMailViaHttp(mailOptions);
     console.log(`Unblock notification email sent to ${email}`);
   } catch (error) {
     console.error('Error sending unblock notification email:', error);
@@ -300,7 +343,7 @@ const sendPayoutNotificationEmail = async (email, driverName, amount, rideCount,
   };
 
   try {
-    await transporter.sendMail(mailOptions);
+    await sendMailViaHttp(mailOptions);
     console.log(`Payout notification email sent to ${email}`);
   } catch (error) {
     console.error('Error sending payout notification email:', error);
