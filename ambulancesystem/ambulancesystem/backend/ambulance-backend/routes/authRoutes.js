@@ -51,15 +51,26 @@ router.post('/register', registerLimiter, upload.fields([
     const existingDriver = await Driver.findOne({ $or: [{ email }, { phone }] });
 
     if (existingPatient) {
-      return res.status(400).json({ 
-        message: `User already exists! Matched in Patients: Email: ${existingPatient.email}, Phone: ${existingPatient.phone}` 
-      });
+      if (!existingPatient.isVerified) {
+        console.log(`Deleting unverified patient to allow re-registration: ${existingPatient.email}`);
+        await Patient.findByIdAndDelete(existingPatient._id);
+      } else {
+        return res.status(400).json({ 
+          message: `User already exists! Matched in Patients: Email: ${existingPatient.email}, Phone: ${existingPatient.phone}` 
+        });
+      }
     }
 
     if (existingDriver) {
-      return res.status(400).json({ 
-        message: `User already exists! Matched in Drivers: Email: ${existingDriver.email}, Phone: ${existingDriver.phone}` 
-      });
+      if (!existingDriver.isEmailVerified) {
+        console.log(`Deleting unverified driver to allow re-registration: ${existingDriver.email}`);
+        await DriverDocument.deleteMany({ driverId: existingDriver._id });
+        await Driver.findByIdAndDelete(existingDriver._id);
+      } else {
+        return res.status(400).json({ 
+          message: `User already exists! Matched in Drivers: Email: ${existingDriver.email}, Phone: ${existingDriver.phone}` 
+        });
+      }
     }
 
     const salt = await bcrypt.genSalt(10);

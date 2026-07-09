@@ -24,6 +24,7 @@ export const Register = ({ onToggleLogin }) => {
   const [error, setError] = useState('');
   const [showOtp, setShowOtp] = useState(false);
   const [otp, setOtp] = useState('');
+  const [loading, setLoading] = useState(false);
   const { register, verifyOtp } = useAuth();
 
   const handleFileChange = (e) => {
@@ -68,6 +69,7 @@ export const Register = ({ onToggleLogin }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setLoading(true);
 
     // VALIDATION REGEX
     const phoneRegex = /^[0-9]{10}$/;
@@ -78,12 +80,14 @@ export const Register = ({ onToggleLogin }) => {
     // PASSWORD VALIDATION
     if (!passwordRegex.test(formData.password)) {
       setError("Password must be at least 6 characters with one uppercase letter, one digit, and one special character.");
+      setLoading(false);
       return;
     }
 
     // PHONE MUST BE 10 DIGITS
     if (!phoneRegex.test(formData.phone)) {
       setError("Phone number must be exactly 10 digits.");
+      setLoading(false);
       return;
     }
 
@@ -91,11 +95,13 @@ export const Register = ({ onToggleLogin }) => {
     if (formData.role === "driver") {
       if (!licenseRegex.test(formData.licenseNumber)) {
         setError("Invalid License Number. Must be exactly 16 alphanumeric characters.");
+        setLoading(false);
         return;
       }
 
       if (!vehicleRegex.test(formData.vehicleNumber)) {
         setError("Invalid Vehicle Number. Example: GJ-05-GV-4446");
+        setLoading(false);
         return;
       }
     }
@@ -105,6 +111,7 @@ export const Register = ({ onToggleLogin }) => {
       if (formData.role === 'driver') {
         if (!files.licenseFile || !files.rcFile || !files.photoFile) {
           setError("Please upload License, RC, and Photo.");
+          setLoading(false);
           return;
         }
         const form = new FormData();
@@ -123,16 +130,21 @@ export const Register = ({ onToggleLogin }) => {
       }
     } catch (err) {
       setError(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleVerifyOtp = async (e) => {
     e.preventDefault();
     setError('');
+    setLoading(true);
     try {
       await verifyOtp(formData.email, otp, formData.role);
     } catch (err) {
       setError(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -171,9 +183,12 @@ export const Register = ({ onToggleLogin }) => {
 
             <button
               type="submit"
-              className="w-full bg-red-600 text-white py-3 rounded-lg font-semibold hover:bg-red-700 transition"
+              disabled={loading}
+              className={`w-full text-white py-3 rounded-lg font-semibold transition ${
+                loading ? 'bg-red-400 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'
+              }`}
             >
-              Verify & Login
+              {loading ? 'Verifying...' : 'Verify & Login'}
             </button>
           </form>
         </div>
@@ -380,9 +395,12 @@ export const Register = ({ onToggleLogin }) => {
           {/* SUBMIT */}
           <button
             type="submit"
-            className="w-full bg-red-600 text-white py-3 rounded-lg font-semibold hover:bg-red-700 transition"
+            disabled={loading}
+            className={`w-full text-white py-3 rounded-lg font-semibold transition ${
+              loading ? 'bg-red-400 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'
+            }`}
           >
-            Register
+            {loading ? 'Registering...' : 'Register'}
           </button>
         </form>
 
