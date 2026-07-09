@@ -132,7 +132,8 @@ router.post('/register', registerLimiter, upload.fields([
       driver.documents = [licenseDoc._id, rcDoc._id, photoDoc._id];
       await driver.save();
 
-      await sendOTP(email, otp);
+      // Send OTP in background so it doesn't block the request
+      sendOTP(email, otp).catch(err => console.error('Background sendOTP error:', err));
 
       return res.status(201).json({
         message: 'Registration successful. Please verify your email.',
@@ -155,7 +156,8 @@ router.post('/register', registerLimiter, upload.fields([
         otpExpires
       });
 
-      await sendOTP(email, otp);
+      // Send OTP in background so it doesn't block the request
+      sendOTP(email, otp).catch(err => console.error('Background sendOTP error:', err));
 
       return res.status(201).json({
         message: 'Registration successful. Please verify your email.',
@@ -395,10 +397,11 @@ router.post('/verify-otp', otpLimiter, otpValidation, async (req, res) => {
     user.otpExpires = undefined;
     await user.save();
 
+    // Send verification emails in background
     if (role === 'driver') {
-      await sendDriverPendingEmail(user.email, user.name);
+      sendDriverPendingEmail(user.email, user.name).catch(err => console.error('Background email error:', err));
     } else {
-      await sendWelcomeEmail(user.email, user.name);
+      sendWelcomeEmail(user.email, user.name).catch(err => console.error('Background email error:', err));
     }
 
     return res.json({
