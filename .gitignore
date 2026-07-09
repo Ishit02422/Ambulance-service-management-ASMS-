@@ -1,0 +1,31 @@
+# Dependency directories
+node_modules/
+**/node_modules/
+package-lock.json
+**/package-lock.json
+
+# Environment variables (Sensitive Credentials)
+.env
+**/.env
+
+# Temporary / Script files
+verify-driver.js
+create-admin.js
+
+# Build directories
+dist/
+**/dist/
+build/
+**/build/
+
+# IDE / Editor folders
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# OS metadata files
+.DS_Store
+Thumbs.db
