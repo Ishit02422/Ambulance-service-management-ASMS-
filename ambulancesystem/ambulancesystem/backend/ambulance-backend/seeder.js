@@ -62,6 +62,7 @@ const importData = async () => {
         coordinates: [72.5714, 23.0225], // Ahmedabad coordinates
       },
       isApproved: true,
+      isEmailVerified: true,
     });
 
     console.log('Driver User Created:');
