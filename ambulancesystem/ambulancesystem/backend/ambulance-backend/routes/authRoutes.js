@@ -50,8 +50,16 @@ router.post('/register', registerLimiter, upload.fields([
     const existingPatient = await Patient.findOne({ $or: [{ email }, { phone }] });
     const existingDriver = await Driver.findOne({ $or: [{ email }, { phone }] });
 
-    if (existingPatient || existingDriver) {
-      return res.status(400).json({ message: 'User with this email or phone already exists' });
+    if (existingPatient) {
+      return res.status(400).json({ 
+        message: `User already exists! Matched in Patients: Email: ${existingPatient.email}, Phone: ${existingPatient.phone}` 
+      });
+    }
+
+    if (existingDriver) {
+      return res.status(400).json({ 
+        message: `User already exists! Matched in Drivers: Email: ${existingDriver.email}, Phone: ${existingDriver.phone}` 
+      });
     }
 
     const salt = await bcrypt.genSalt(10);

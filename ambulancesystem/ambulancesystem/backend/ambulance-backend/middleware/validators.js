@@ -70,7 +70,7 @@ const registerValidation = [
     .withMessage('Vehicle number format must be XX-00-XX-0000'),
   body('ambulanceType')
     .if(body('role').equals('driver'))
-    .isIn(['Normal', 'ICU', 'Cardiac', 'Dead Body Van'])
+    .isIn(['Normal', 'ICU', 'Cardiac', 'DeadBodyVan'])
     .withMessage('Invalid ambulance type'),
   handleValidationErrors
 ];
