@@ -117,20 +117,40 @@ export function LandingPage({ onGetStarted, onSignIn }: LandingPageProps) {
         {/* Stats */}
         <div className="lp-stats">
           <div className="lp-stat">
-            <span className="lp-stat__num">{counters.ambulances}+</span>
-            <span className="lp-stat__label">Ambulances</span>
+            <span className="lp-stat__num">
+              {counters.ambulances}
+              {counters.ambulances >= 10 ? '+' : ''}
+            </span>
+            <span className="lp-stat__label">
+              {counters.ambulances === 1 ? 'Ambulance' : 'Ambulances'}
+            </span>
           </div>
           <div className="lp-stat">
-            <span className="lp-stat__num">{counters.hospitals}+</span>
-            <span className="lp-stat__label">Hospitals</span>
+            <span className="lp-stat__num">
+              {counters.hospitals}
+              {counters.hospitals >= 10 ? '+' : ''}
+            </span>
+            <span className="lp-stat__label">
+              {counters.hospitals === 1 ? 'Hospital' : 'Hospitals'}
+            </span>
           </div>
           <div className="lp-stat">
-            <span className="lp-stat__num">{counters.trips.toLocaleString()}+</span>
-            <span className="lp-stat__label">Trips Completed</span>
+            <span className="lp-stat__num">
+              {counters.trips.toLocaleString()}
+              {counters.trips >= 10 ? '+' : ''}
+            </span>
+            <span className="lp-stat__label">
+              {counters.trips === 1 ? 'Trip Completed' : 'Trips Completed'}
+            </span>
           </div>
           <div className="lp-stat">
-            <span className="lp-stat__num">{counters.years}+</span>
-            <span className="lp-stat__label">Years Active</span>
+            <span className="lp-stat__num">
+              {counters.years}
+              {counters.years >= 10 ? '+' : ''}
+            </span>
+            <span className="lp-stat__label">
+              {counters.years === 1 ? 'Year Active' : 'Years Active'}
+            </span>
           </div>
         </div>
       </section>

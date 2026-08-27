@@ -65,13 +65,16 @@ router.get('/public-stats', async (req, res) => {
     const hospitalsCount = await Hospital.countDocuments({});
     const tripsCount = await Booking.countDocuments({ status: 'dropped' });
     
+    // Calculate actual years active from oldest patient/admin creation date
+    const oldestUser = await Patient.findOne({}, {}, { sort: { createdAt: 1 } });
+    const startYear = oldestUser ? new Date(oldestUser.createdAt).getFullYear() : new Date().getFullYear();
     const currentYear = new Date().getFullYear();
-    const yearsActive = Math.max(10, currentYear - 2015);
+    const yearsActive = Math.max(1, currentYear - startYear + 1);
 
     res.json({
-      ambulances: 120 + ambulancesCount,
-      hospitals: 48 + hospitalsCount,
-      trips: 3500 + tripsCount,
+      ambulances: ambulancesCount,
+      hospitals: hospitalsCount,
+      trips: tripsCount,
       years: yearsActive
     });
   } catch (err) {
