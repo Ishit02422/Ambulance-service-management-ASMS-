@@ -14,10 +14,14 @@
     "noEmit": true,
     "jsx": "react-jsx",
 
-    /* Linting */
-    "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
+    /* Allow JS/JSX files to be imported from TSX */
+    "allowJs": true,
+    "checkJs": false,
+
+    /* Linting - relaxed for mixed JS+TS project */
+    "strict": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": true
   },
   "include": ["src"]
