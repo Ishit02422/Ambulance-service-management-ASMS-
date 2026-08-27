@@ -4,7 +4,9 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Custom elegant scrollbar */
+/* =====================================================
+   GLOBAL — Custom Scrollbar
+   ===================================================== */
 .custom-scrollbar::-webkit-scrollbar {
   width: 5px;
   height: 5px;
@@ -316,7 +318,8 @@
 .auth-footer button:hover { color: #a78bfa; }
 
 /* =====================================================
-   DASHBOARD ROOT — Dark Purple Theme
+   DASHBOARD ROOT — Unified Dark Purple Glass Theme
+   Covers: PatientDashboard, DriverDashboard, AdminDashboard
    ===================================================== */
 
 .dashboard-root {
@@ -327,7 +330,7 @@
   min-height: 100vh;
 }
 
-/* Ambient glow */
+/* Ambient glow orbs */
 .dashboard-root::before {
   content: '';
   position: fixed;
@@ -353,7 +356,7 @@
   z-index: 0;
 }
 
-/* Header */
+/* ---- HEADER ---- */
 .dashboard-root header {
   background: rgba(10, 10, 15, 0.85) !important;
   backdrop-filter: blur(20px) !important;
@@ -382,13 +385,15 @@
   color: #94a3b8 !important;
 }
 
-/* Nav Tabs */
+/* Nav Tabs — Active */
 .dashboard-root header button.bg-red-100 {
   background: linear-gradient(135deg, #7c3aed, #6d28d9) !important;
   color: #ffffff !important;
   box-shadow: 0 4px 15px rgba(124, 58, 237, 0.45) !important;
   font-weight: 600 !important;
+  -webkit-text-fill-color: #ffffff !important;
 }
+/* Nav Tabs — Inactive */
 .dashboard-root header button.text-gray-600 {
   color: #94a3b8 !important;
   background: transparent !important;
@@ -404,7 +409,7 @@
   color: #a78bfa !important;
 }
 
-/* Main Cards */
+/* ---- MAIN CONTENT CARDS — bg-white override ---- */
 .dashboard-root .bg-white {
   background: rgba(255, 255, 255, 0.035) !important;
   border: 1px solid rgba(255, 255, 255, 0.08) !important;
@@ -414,36 +419,67 @@
   color: #e2e8f0 !important;
 }
 
+/* bg-gray-50 used in many places */
 .dashboard-root .bg-gray-50 {
-  background: rgba(255, 255, 255, 0.02) !important;
+  background: rgba(255, 255, 255, 0.025) !important;
 }
 
+/* bg-gray-100 for inactive filter buttons, toggle buttons, chart bars */
+.dashboard-root .bg-gray-100 {
+  background: rgba(255, 255, 255, 0.06) !important;
+  color: #94a3b8 !important;
+}
+
+/* bg-gray-200 dividers */
+.dashboard-root .bg-gray-200 {
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Hover states */
 .dashboard-root .hover\:bg-gray-50:hover {
   background: rgba(124, 58, 237, 0.08) !important;
 }
-
-/* Driver & Admin Stat Cards */
-.dashboard-root .p-4.bg-blue-50 {
-  background: rgba(59, 130, 246, 0.1) !important;
-  border: 1px solid rgba(59, 130, 246, 0.25) !important;
+.dashboard-root .hover\:bg-gray-100:hover {
+  background: rgba(124, 58, 237, 0.12) !important;
 }
-.dashboard-root .p-4.bg-purple-50 {
-  background: rgba(168, 85, 247, 0.1) !important;
-  border: 1px solid rgba(168, 85, 247, 0.25) !important;
-}
-.dashboard-root .p-4.bg-green-50 {
-  background: rgba(34, 197, 94, 0.1) !important;
-  border: 1px solid rgba(34, 197, 94, 0.25) !important;
-}
-.dashboard-root .p-4.bg-yellow-50 {
-  background: rgba(234, 179, 8, 0.1) !important;
-  border: 1px solid rgba(234, 179, 8, 0.25) !important;
-}
-.dashboard-root .p-4.bg-orange-50 {
-  background: rgba(249, 115, 22, 0.1) !important;
-  border: 1px solid rgba(249, 115, 22, 0.25) !important;
+.dashboard-root .hover\:bg-gray-200:hover {
+  background: rgba(124, 58, 237, 0.15) !important;
 }
 
+/* ---- STAT CARDS (Driver & Admin) ---- */
+
+/* Blue stat */
+.dashboard-root .p-4.bg-blue-50,
+.dashboard-root .p-3.bg-blue-100 {
+  background: rgba(59, 130, 246, 0.12) !important;
+  border: 1px solid rgba(59, 130, 246, 0.3) !important;
+}
+/* Purple stat */
+.dashboard-root .p-4.bg-purple-50,
+.dashboard-root .p-3.bg-purple-100 {
+  background: rgba(168, 85, 247, 0.12) !important;
+  border: 1px solid rgba(168, 85, 247, 0.3) !important;
+}
+/* Green stat */
+.dashboard-root .p-4.bg-green-50,
+.dashboard-root .p-3.bg-green-100 {
+  background: rgba(34, 197, 94, 0.12) !important;
+  border: 1px solid rgba(34, 197, 94, 0.3) !important;
+}
+/* Yellow stat */
+.dashboard-root .p-4.bg-yellow-50,
+.dashboard-root .p-3.bg-yellow-100 {
+  background: rgba(234, 179, 8, 0.12) !important;
+  border: 1px solid rgba(234, 179, 8, 0.3) !important;
+}
+/* Orange stat */
+.dashboard-root .p-4.bg-orange-50,
+.dashboard-root .p-3.bg-orange-100 {
+  background: rgba(249, 115, 22, 0.12) !important;
+  border: 1px solid rgba(249, 115, 22, 0.3) !important;
+}
+
+/* Stat card large text override */
 .dashboard-root .text-blue-900,
 .dashboard-root .text-purple-900,
 .dashboard-root .text-green-900,
@@ -453,7 +489,12 @@
   font-weight: 800 !important;
 }
 
-/* Driver Sub-tabs */
+/* Stat card small label override */
+.dashboard-root .text-blue-600 { color: #60a5fa !important; }
+.dashboard-root .text-purple-600 { color: #a78bfa !important; }
+.dashboard-root .text-orange-600 { color: #fb923c !important; }
+
+/* ---- DRIVER SUB-TABS (bottom border style) ---- */
 .dashboard-root .border-b button {
   color: #94a3b8;
   transition: all 0.2s ease;
@@ -461,24 +502,104 @@
 .dashboard-root .border-b button:hover {
   color: #f8fafc;
 }
-.dashboard-root .border-b button.border-red-600,
+/* Active tab with red-600 underline → purple */
 .dashboard-root .border-b button.text-red-600 {
   color: #a78bfa !important;
+}
+.dashboard-root .border-b .bg-red-600 {
+  background: #8b5cf6 !important;
+}
+/* Active tab matching border-red-600 */
+.dashboard-root .border-b button.border-red-600 {
   border-color: #8b5cf6 !important;
+  color: #a78bfa !important;
   font-weight: 700 !important;
 }
 
-/* Admin Sidebar */
-.dashboard-root aside.bg-white {
+/* ---- DRIVER ONLINE/OFFLINE TOGGLE ---- */
+.dashboard-root button.bg-green-100 {
+  background: rgba(34, 197, 94, 0.15) !important;
+  border: 1px solid rgba(34, 197, 94, 0.35) !important;
+  color: #86efac !important;
+}
+.dashboard-root button.bg-green-100:hover,
+.dashboard-root .hover\:bg-green-200:hover {
+  background: rgba(34, 197, 94, 0.25) !important;
+}
+/* Offline state - "bg-gray-100 text-gray-700" → subtle glass */
+.dashboard-root button.text-gray-700.bg-gray-100 {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  color: #94a3b8 !important;
+}
+
+/* ---- SOS BUTTON ---- */
+.dashboard-root button.bg-red-600 {
+  background: linear-gradient(135deg, #dc2626, #b91c1c) !important;
+  color: #fff !important;
+  box-shadow: 0 4px 18px rgba(220, 38, 38, 0.5) !important;
+  border: none !important;
+  transition: all 0.22s ease !important;
+}
+.dashboard-root button.bg-red-600:hover {
+  background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+  box-shadow: 0 6px 24px rgba(220, 38, 38, 0.65) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* ---- OTHER ACTION BUTTONS ---- */
+.dashboard-root button.bg-blue-600 {
+  background: linear-gradient(135deg, #7c3aed, #6d28d9) !important;
+  color: #fff !important;
+  box-shadow: 0 4px 18px rgba(124, 58, 237, 0.45) !important;
+  border: none !important;
+  transition: all 0.22s ease !important;
+}
+.dashboard-root button.bg-blue-600:hover {
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed) !important;
+  box-shadow: 0 6px 24px rgba(124, 58, 237, 0.6) !important;
+  transform: translateY(-1px) !important;
+}
+
+.dashboard-root button.bg-green-600 {
+  background: linear-gradient(135deg, #10b981, #059669) !important;
+  color: #fff !important;
+  box-shadow: 0 4px 18px rgba(16, 185, 129, 0.4) !important;
+}
+.dashboard-root button.bg-green-600:hover {
+  background: linear-gradient(135deg, #34d399, #10b981) !important;
+  box-shadow: 0 6px 24px rgba(16, 185, 129, 0.55) !important;
+  transform: translateY(-1px) !important;
+}
+
+.dashboard-root button.bg-orange-600 {
+  background: linear-gradient(135deg, #f97316, #ea580c) !important;
+  color: #fff !important;
+  box-shadow: 0 4px 18px rgba(249, 115, 22, 0.4) !important;
+}
+.dashboard-root button.bg-orange-600:hover {
+  background: linear-gradient(135deg, #fb923c, #f97316) !important;
+  box-shadow: 0 6px 24px rgba(249, 115, 22, 0.55) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* ---- ADMIN SIDEBAR ---- */
+.dashboard-root aside.bg-white,
+.dashboard-root aside {
   background: rgba(10, 10, 15, 0.95) !important;
   border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
   backdrop-filter: blur(20px) !important;
 }
+/* Active sidebar item */
 .dashboard-root aside button.bg-red-50 {
   background: linear-gradient(135deg, rgba(124, 58, 237, 0.25), rgba(109, 40, 217, 0.15)) !important;
   color: #a78bfa !important;
   border-left: 3px solid #8b5cf6 !important;
 }
+.dashboard-root aside button.text-red-600 {
+  color: #a78bfa !important;
+}
+/* Inactive sidebar items */
 .dashboard-root aside button.text-gray-600 {
   color: #94a3b8 !important;
 }
@@ -486,11 +607,18 @@
   background: rgba(255, 255, 255, 0.05) !important;
   color: #ffffff !important;
 }
+.dashboard-root aside .hover\:bg-gray-50:hover {
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: #ffffff !important;
+}
 
-/* Typography in Dashboard */
+/* ---- TYPOGRAPHY — Global color overrides ---- */
 .dashboard-root .text-gray-900,
 .dashboard-root .text-slate-900 {
   color: #f8fafc !important;
+}
+.dashboard-root .text-gray-800 {
+  color: #e2e8f0 !important;
 }
 .dashboard-root .text-gray-700,
 .dashboard-root .text-gray-600,
@@ -502,26 +630,184 @@
 .dashboard-root .text-slate-400 {
   color: #64748b !important;
 }
+.dashboard-root .text-gray-400 {
+  color: #64748b !important;
+}
+.dashboard-root .text-gray-300 {
+  color: #94a3b8 !important;
+}
 
-/* Borders & Dividers */
+/* ---- BORDERS & DIVIDERS ---- */
 .dashboard-root .border,
 .dashboard-root .border-b,
 .dashboard-root .border-t,
+.dashboard-root .border-l-4,
 .dashboard-root .border-gray-100,
 .dashboard-root .border-gray-200,
 .dashboard-root .border-gray-300,
 .dashboard-root .border-slate-100,
 .dashboard-root .border-slate-200,
 .dashboard-root .divide-gray-100 > * + *,
-.dashboard-root .divide-slate-100 > * + * {
+.dashboard-root .divide-slate-100 > * + *,
+.dashboard-root .divide-gray-200 > * + * {
   border-color: rgba(255, 255, 255, 0.08) !important;
 }
+.dashboard-root .border-green-100 {
+  border-color: rgba(34, 197, 94, 0.25) !important;
+}
+.dashboard-root .border-blue-500 {
+  border-color: rgba(139, 92, 246, 0.6) !important;
+}
 
-/* Form Inputs */
+/* ---- TABLES ---- */
+/* Table header */
+.dashboard-root table thead,
+.dashboard-root thead.bg-gray-50 {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+.dashboard-root table thead th {
+  color: #94a3b8 !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+/* Table body */
+.dashboard-root table tbody tr {
+  border-color: rgba(255, 255, 255, 0.05) !important;
+  transition: background 0.15s ease;
+}
+.dashboard-root table tbody tr:hover {
+  background: rgba(124, 58, 237, 0.06) !important;
+}
+/* Table cells */
+.dashboard-root table td {
+  color: #cbd5e1 !important;
+  border-color: rgba(255, 255, 255, 0.05) !important;
+}
+.dashboard-root table td .text-gray-900,
+.dashboard-root table td .font-medium.text-gray-900 {
+  color: #f1f5f9 !important;
+}
+
+/* ---- STATUS BADGES ---- */
+.dashboard-root .bg-green-100 {
+  background: rgba(34, 197, 94, 0.15) !important;
+  border: 1px solid rgba(34, 197, 94, 0.3) !important;
+  color: #86efac !important;
+}
+.dashboard-root .text-green-800,
+.dashboard-root .text-green-700,
+.dashboard-root .text-green-600 {
+  color: #86efac !important;
+}
+.dashboard-root .bg-green-200 {
+  background: rgba(34, 197, 94, 0.2) !important;
+  color: #86efac !important;
+}
+
+.dashboard-root .bg-yellow-100 {
+  background: rgba(234, 179, 8, 0.15) !important;
+  border: 1px solid rgba(234, 179, 8, 0.3) !important;
+  color: #fde047 !important;
+}
+.dashboard-root .text-yellow-800,
+.dashboard-root .text-yellow-700 {
+  color: #fde047 !important;
+}
+
+.dashboard-root .bg-blue-100 {
+  background: rgba(59, 130, 246, 0.15) !important;
+  border: 1px solid rgba(59, 130, 246, 0.3) !important;
+  color: #93c5fd !important;
+}
+.dashboard-root .text-blue-800,
+.dashboard-root .text-blue-700 {
+  color: #93c5fd !important;
+}
+
+.dashboard-root .bg-red-100 {
+  background: rgba(239, 68, 68, 0.12) !important;
+  border: 1px solid rgba(239, 68, 68, 0.25) !important;
+  color: #fca5a5 !important;
+}
+.dashboard-root .text-red-800,
+.dashboard-root .text-red-600 {
+  color: #fca5a5 !important;
+}
+
+.dashboard-root .bg-purple-100 {
+  background: rgba(168, 85, 247, 0.15) !important;
+  border: 1px solid rgba(168, 85, 247, 0.3) !important;
+  color: #c4b5fd !important;
+}
+
+.dashboard-root .bg-orange-100 {
+  background: rgba(249, 115, 22, 0.15) !important;
+  border: 1px solid rgba(249, 115, 22, 0.3) !important;
+  color: #fdba74 !important;
+}
+
+/* ---- DRIVER ONLINE CARDS (Admin) ---- */
+.dashboard-root .bg-green-50 {
+  background: rgba(34, 197, 94, 0.08) !important;
+  border: 1px solid rgba(34, 197, 94, 0.2) !important;
+}
+.dashboard-root .bg-green-50 .text-gray-900 {
+  color: #f1f5f9 !important;
+}
+
+/* ---- FEEDBACK SECTION ---- */
+/* Reply section bg-blue-50 */
+.dashboard-root .bg-blue-50 {
+  background: rgba(59, 130, 246, 0.08) !important;
+  border: 1px solid rgba(59, 130, 246, 0.2) !important;
+}
+.dashboard-root .text-blue-900 {
+  color: #93c5fd !important;
+}
+.dashboard-root .text-blue-800 {
+  color: #93c5fd !important;
+}
+
+/* Feedback comment quote bg */
+.dashboard-root p.bg-gray-50 {
+  background: rgba(255, 255, 255, 0.04) !important;
+  color: #cbd5e1 !important;
+}
+
+/* ---- AMBULANCE TYPE CARDS ---- */
+.dashboard-root .border-red-500.bg-red-50 {
+  border-color: rgba(139, 92, 246, 0.8) !important;
+  background: rgba(124, 58, 237, 0.15) !important;
+  box-shadow: 0 0 20px rgba(124, 58, 237, 0.25) !important;
+}
+.dashboard-root .bg-red-500 {
+  background: #8b5cf6 !important;
+}
+.dashboard-root .bg-red-50 {
+  background: rgba(239, 68, 68, 0.08) !important;
+  border: 1px solid rgba(239, 68, 68, 0.2) !important;
+}
+
+/* ---- CANCEL & RE-BOOK BUTTONS ---- */
+.dashboard-root button.bg-red-50 {
+  background: rgba(239, 68, 68, 0.12) !important;
+  border: 1px solid rgba(239, 68, 68, 0.25) !important;
+  color: #fca5a5 !important;
+}
+.dashboard-root button.bg-red-50:hover {
+  background: rgba(239, 68, 68, 0.22) !important;
+}
+
+/* ---- FORM INPUTS IN DASHBOARD ---- */
 .dashboard-root input[type="text"],
 .dashboard-root input[type="date"],
 .dashboard-root input[type="email"],
 .dashboard-root input[type="password"],
+.dashboard-root input[type="number"],
+.dashboard-root input[type="tel"],
 .dashboard-root select,
 .dashboard-root textarea {
   background: rgba(255, 255, 255, 0.05) !important;
@@ -544,92 +830,18 @@
   background: #12111c !important;
   color: #f8fafc !important;
 }
-
-/* Buttons in Dashboard */
-.dashboard-root button.bg-red-600,
-.dashboard-root button.bg-blue-600 {
-  background: linear-gradient(135deg, #7c3aed, #6d28d9) !important;
-  color: #fff !important;
-  box-shadow: 0 4px 18px rgba(124, 58, 237, 0.45) !important;
+/* Borderless inputs (Admin filters) */
+.dashboard-root input.border-none,
+.dashboard-root select.border-none {
   border: none !important;
-  transition: all 0.22s ease !important;
+  background: transparent !important;
+  color: #e2e8f0 !important;
 }
-.dashboard-root button.bg-red-600:hover,
-.dashboard-root button.bg-blue-600:hover {
-  background: linear-gradient(135deg, #8b5cf6, #7c3aed) !important;
-  box-shadow: 0 6px 24px rgba(124, 58, 237, 0.6) !important;
-  transform: translateY(-1px) !important;
+.dashboard-root input.border-none::placeholder {
+  color: #64748b !important;
 }
 
-.dashboard-root button.bg-green-600 {
-  background: linear-gradient(135deg, #10b981, #059669) !important;
-  color: #fff !important;
-  box-shadow: 0 4px 18px rgba(16, 185, 129, 0.4) !important;
-}
-.dashboard-root button.bg-green-600:hover {
-  background: linear-gradient(135deg, #34d399, #10b981) !important;
-  box-shadow: 0 6px 24px rgba(16, 185, 129, 0.55) !important;
-  transform: translateY(-1px) !important;
-}
-
-/* Ambulance Type Cards */
-.dashboard-root .border-red-500.bg-red-50 {
-  border-color: rgba(139, 92, 246, 0.8) !important;
-  background: rgba(124, 58, 237, 0.15) !important;
-  box-shadow: 0 0 20px rgba(124, 58, 237, 0.25) !important;
-}
-.dashboard-root .bg-red-500 {
-  background: #8b5cf6 !important;
-}
-
-/* Ambulance Icons & Badges */
-.dashboard-root .bg-red-100 {
-  background: rgba(124, 58, 237, 0.18) !important;
-  border: 1px solid rgba(124, 58, 237, 0.35) !important;
-}
-.dashboard-root .text-red-600 {
-  color: #a78bfa !important;
-}
-
-/* Status Badges */
-.dashboard-root .bg-green-100 {
-  background: rgba(34, 197, 94, 0.15) !important;
-  border: 1px solid rgba(34, 197, 94, 0.3) !important;
-  color: #86efac !important;
-}
-.dashboard-root .text-green-700,
-.dashboard-root .text-green-600 {
-  color: #86efac !important;
-}
-.dashboard-root .bg-yellow-100 {
-  background: rgba(234, 179, 8, 0.15) !important;
-  border: 1px solid rgba(234, 179, 8, 0.3) !important;
-  color: #fde047 !important;
-}
-.dashboard-root .text-yellow-700 {
-  color: #fde047 !important;
-}
-.dashboard-root .bg-blue-100 {
-  background: rgba(59, 130, 246, 0.15) !important;
-  border: 1px solid rgba(59, 130, 246, 0.3) !important;
-  color: #93c5fd !important;
-}
-.dashboard-root .text-blue-700,
-.dashboard-root .text-blue-600 {
-  color: #93c5fd !important;
-}
-
-/* Re-book & Cancel Buttons */
-.dashboard-root button.bg-red-50 {
-  background: rgba(239, 68, 68, 0.12) !important;
-  border: 1px solid rgba(239, 68, 68, 0.25) !important;
-  color: #fca5a5 !important;
-}
-.dashboard-root button.bg-red-50:hover {
-  background: rgba(239, 68, 68, 0.22) !important;
-}
-
-/* Autocomplete / Suggestions Dropdown */
+/* ---- AUTOCOMPLETE / SUGGESTIONS DROPDOWN ---- */
 .dashboard-root .bg-white\/95 {
   background: rgba(15, 15, 25, 0.98) !important;
   border: 1px solid rgba(255, 255, 255, 0.12) !important;
@@ -644,7 +856,7 @@
   background: rgba(255, 255, 255, 0.04) !important;
 }
 
-/* Modals */
+/* ---- MODALS ---- */
 .dashboard-root .fixed.inset-0 {
   background: rgba(0, 0, 0, 0.75) !important;
   backdrop-filter: blur(8px) !important;
@@ -655,7 +867,109 @@
   box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8) !important;
 }
 
-/* Responsive */
+/* ---- ADMIN CHART BARS ---- */
+/* Progress bars in charts */
+.dashboard-root .bg-blue-500 {
+  background: linear-gradient(90deg, #7c3aed, #8b5cf6) !important;
+}
+.dashboard-root .bg-green-100.rounded-t-lg,
+.dashboard-root .group-hover\:bg-green-200 {
+  background: rgba(124, 58, 237, 0.25) !important;
+}
+.dashboard-root div.group:hover .group-hover\:bg-green-200 {
+  background: rgba(139, 92, 246, 0.35) !important;
+}
+
+/* Tooltip in chart */
+.dashboard-root .bg-gray-800 {
+  background: rgba(20, 18, 35, 0.95) !important;
+  border: 1px solid rgba(139, 92, 246, 0.4) !important;
+}
+
+/* ---- FILTER BUTTONS (This Week / This Month / Custom) ---- */
+/* Active filter button (bg-red-600 in analytics) → purple */
+.dashboard-root .bg-red-600.text-white {
+  background: linear-gradient(135deg, #7c3aed, #6d28d9) !important;
+  box-shadow: 0 4px 15px rgba(124, 58, 237, 0.45) !important;
+}
+
+/* ---- ADMIN OVERVIEW STAT ICON CONTAINERS ---- */
+.dashboard-root .p-3.bg-blue-100 {
+  background: rgba(59, 130, 246, 0.15) !important;
+  border: 1px solid rgba(59, 130, 246, 0.3) !important;
+}
+.dashboard-root .p-3.bg-green-100 {
+  background: rgba(34, 197, 94, 0.15) !important;
+  border: 1px solid rgba(34, 197, 94, 0.3) !important;
+}
+.dashboard-root .p-3.bg-purple-100 {
+  background: rgba(168, 85, 247, 0.15) !important;
+  border: 1px solid rgba(168, 85, 247, 0.3) !important;
+}
+.dashboard-root .p-3.bg-yellow-100 {
+  background: rgba(234, 179, 8, 0.15) !important;
+  border: 1px solid rgba(234, 179, 8, 0.3) !important;
+}
+.dashboard-root .p-3.bg-orange-100 {
+  background: rgba(249, 115, 22, 0.15) !important;
+  border: 1px solid rgba(249, 115, 22, 0.3) !important;
+}
+
+/* ---- YELLOW TEXT OVERRIDE FOR BADGES ---- */
+.dashboard-root .text-yellow-600 {
+  color: #fde047 !important;
+}
+
+/* ---- ADMIN FILTER DIVIDER ---- */
+.dashboard-root .w-px.bg-gray-200 {
+  background: rgba(255, 255, 255, 0.12) !important;
+}
+
+/* ---- SHADOW OVERRIDES ---- */
+.dashboard-root .shadow-sm {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3) !important;
+}
+.dashboard-root .shadow-lg {
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* ---- SCROLLBAR FOR DASHBOARD ---- */
+.dashboard-root ::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.dashboard-root ::-webkit-scrollbar-track {
+  background: rgba(20, 20, 30, 0.6);
+  border-radius: 8px;
+}
+.dashboard-root ::-webkit-scrollbar-thumb {
+  background: rgba(124, 58, 237, 0.3);
+  border-radius: 8px;
+}
+.dashboard-root ::-webkit-scrollbar-thumb:hover {
+  background: rgba(139, 92, 246, 0.5);
+}
+
+/* ---- RING OVERRIDES ---- */
+.dashboard-root .focus\:ring-2:focus,
+.dashboard-root .focus\:ring-blue-500:focus {
+  --tw-ring-color: rgba(139, 92, 246, 0.5) !important;
+}
+
+/* ---- NOTIFICATION / PULSE BADGE ---- */
+.dashboard-root .bg-red-500.text-white.animate-pulse {
+  background: #dc2626 !important;
+  box-shadow: 0 0 12px rgba(220, 38, 38, 0.6) !important;
+}
+
+/* ---- MAP CONTAINER ---- */
+.dashboard-root .leaflet-container {
+  border-radius: 12px !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* ---- RESPONSIVE ---- */
 @media (max-width: 560px) {
   .auth-card {
     padding: 2rem 1.2rem;

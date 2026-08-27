@@ -954,85 +954,92 @@ export const DriverDashboard = () => {
 
             {/* Earnings Summary */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-sm p-6 text-white">
+              <div className="bg-gradient-to-br from-emerald-950/40 via-slate-900/60 to-emerald-900/20 rounded-2xl border border-emerald-500/30 shadow-lg shadow-emerald-950/30 p-6 backdrop-blur-md">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm opacity-90">Total Earnings</span>
-                  <span className="text-3xl font-bold">₹</span>
+                  <span className="text-xs font-semibold text-emerald-400 uppercase tracking-wider">Total Earnings</span>
+                  <span className="text-2xl font-bold text-emerald-400">₹</span>
                 </div>
-                <p className="text-3xl font-bold">₹{analyticsData.totalEarnings.toFixed(2)}</p>
-                <p className="text-xs opacity-75 mt-2">Net after commission</p>
+                <p className="text-3xl font-black text-white">₹{analyticsData.totalEarnings.toFixed(2)}</p>
+                <p className="text-xs text-emerald-300/80 mt-2 font-medium">Net after commission</p>
               </div>
-              <div className="bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl shadow-sm p-6 text-white">
+
+              <div className="bg-gradient-to-br from-amber-950/40 via-slate-900/60 to-amber-900/20 rounded-2xl border border-amber-500/30 shadow-lg shadow-amber-950/30 p-6 backdrop-blur-md">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm opacity-90">Pending Payouts</span>
-                  <Clock className="w-6 h-6" />
+                  <span className="text-xs font-semibold text-amber-400 uppercase tracking-wider">Pending Payouts</span>
+                  <Clock className="w-5 h-5 text-amber-400" />
                 </div>
-                <p className="text-3xl font-bold">₹{analyticsData.pendingPayouts.toFixed(2)}</p>
-                <p className="text-xs opacity-75 mt-2">{analyticsData.pendingRideCount} rides waiting</p>
+                <p className="text-3xl font-black text-amber-300">₹{analyticsData.pendingPayouts.toFixed(2)}</p>
+                <p className="text-xs text-amber-300/80 mt-2 font-medium">{analyticsData.pendingRideCount} rides waiting</p>
               </div>
-              <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-sm p-6 text-white">
+
+              <div className="bg-gradient-to-br from-purple-950/40 via-slate-900/60 to-indigo-900/20 rounded-2xl border border-purple-500/30 shadow-lg shadow-purple-950/30 p-6 backdrop-blur-md">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm opacity-90">Avg per Ride</span>
-                  <TrendingUp className="w-6 h-6" />
+                  <span className="text-xs font-semibold text-purple-400 uppercase tracking-wider">Avg per Ride</span>
+                  <TrendingUp className="w-5 h-5 text-purple-400" />
                 </div>
-                <p className="text-3xl font-bold">
+                <p className="text-3xl font-black text-purple-200">
                   ₹{analyticsData.totalRides > 0 ? (analyticsData.totalEarnings / analyticsData.totalRides).toFixed(2) : '0.00'}
                 </p>
-                <p className="text-xs opacity-75 mt-2">Average earning</p>
+                <p className="text-xs text-purple-300/80 mt-2 font-medium">Average earning</p>
               </div>
             </div>
 
             {/* Pending Rides for Next Payout - Day by Day */}
             {analyticsData.pendingPayoutsByDay && analyticsData.pendingPayoutsByDay.length > 0 && (
-              <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-                <div className="p-6 border-b bg-yellow-50">
+              <div className="bg-slate-900/50 rounded-2xl border border-white/10 shadow-xl overflow-hidden backdrop-blur-md">
+                <div className="p-6 border-b border-amber-500/20 bg-gradient-to-r from-amber-500/15 via-purple-500/10 to-transparent">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h2 className="text-lg font-semibold text-gray-900">Pending Payouts (Day by Day)</h2>
-                      <p className="text-sm text-gray-600">These rides will be paid out in the next daily payout (11:59 PM)</p>
+                      <h2 className="text-lg font-bold text-amber-300 flex items-center gap-2">
+                        <span>⏳</span> Pending Payouts (Day by Day)
+                      </h2>
+                      <p className="text-xs text-slate-300 mt-0.5">These rides will be paid out in the next daily payout (11:59 PM)</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-2xl font-bold text-yellow-600">₹{analyticsData.pendingPayouts.toFixed(2)}</p>
-                      <p className="text-xs text-gray-500">{analyticsData.pendingRideCount} rides</p>
+                      <p className="text-2xl font-black text-amber-300">₹{analyticsData.pendingPayouts.toFixed(2)}</p>
+                      <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-200 border border-amber-500/30 inline-block mt-1">
+                        {analyticsData.pendingRideCount} rides
+                      </span>
                     </div>
                   </div>
                 </div>
-                <div className="divide-y divide-gray-200">
+
+                <div className="divide-y divide-white/5 p-4 space-y-4">
                   {analyticsData.pendingPayoutsByDay.map((dayData, dayIndex) => (
-                    <div key={dayIndex} className="p-4 hover:bg-gray-50">
+                    <div key={dayIndex} className="p-4 bg-white/[0.02] rounded-xl border border-white/5">
                       {/* Day Header */}
-                      <div className="flex items-center justify-between mb-3 pb-2 border-b border-gray-200">
+                      <div className="flex items-center justify-between mb-3 pb-2.5 border-b border-white/10">
                         <div>
-                          <h3 className="text-md font-semibold text-gray-800">{dayData.date}</h3>
-                          <p className="text-xs text-gray-500">{dayData.rideCount} ride{dayData.rideCount > 1 ? 's' : ''}</p>
+                          <h3 className="text-sm font-bold text-slate-200">{dayData.date}</h3>
+                          <p className="text-xs text-slate-400">{dayData.rideCount} ride{dayData.rideCount > 1 ? 's' : ''}</p>
                         </div>
                         <div className="text-right">
-                          <p className="text-lg font-bold text-green-600">₹{dayData.totalAmount.toFixed(2)}</p>
+                          <p className="text-base font-black text-emerald-400">₹{dayData.totalAmount.toFixed(2)}</p>
                         </div>
                       </div>
                       
                       {/* Rides List for this day */}
                       <div className="space-y-2">
                         {dayData.rides.map((booking, rideIndex) => (
-                          <div key={rideIndex} className="flex items-start justify-between p-3 bg-gray-50 rounded-lg">
-                            <div className="flex-1">
-                              <p className="text-xs font-medium text-gray-700 mb-1">{booking.bookingId}</p>
-                              <div className="text-xs text-gray-600">
-                                <div className="flex items-start">
-                                  <span className="text-green-600 mr-1">📍</span>
+                          <div key={rideIndex} className="flex items-start justify-between p-3.5 bg-slate-900/60 hover:bg-purple-900/20 rounded-xl border border-white/5 hover:border-purple-500/30 transition-all">
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-mono font-bold text-purple-300 mb-1">{booking.bookingId}</p>
+                              <div className="text-xs text-slate-300 space-y-1">
+                                <div className="flex items-start gap-1.5">
+                                  <span className="text-emerald-400 font-bold">🟢</span>
                                   <span className="truncate">{booking.pickupAddress}</span>
                                 </div>
-                                <div className="flex items-start ml-4">
-                                  <span className="text-red-600 mr-1">📍</span>
+                                <div className="flex items-start gap-1.5 ml-0.5">
+                                  <span className="text-rose-400 font-bold">🔴</span>
                                   <span className="truncate">{booking.dropAddress}</span>
                                 </div>
                               </div>
-                              <p className="text-xs text-gray-400 mt-1">
-                                {new Date(booking.completedAt).toLocaleTimeString()}
+                              <p className="text-[11px] text-slate-400 mt-1.5 flex items-center gap-1 font-mono">
+                                <span>🕒</span> {new Date(booking.completedAt).toLocaleTimeString()}
                               </p>
                             </div>
-                            <div className="ml-4 text-right">
-                              <p className="text-sm font-bold text-green-600">₹{booking.amount.toFixed(2)}</p>
+                            <div className="ml-4 text-right shrink-0">
+                              <p className="text-base font-black text-emerald-400">₹{booking.amount.toFixed(2)}</p>
                             </div>
                           </div>
                         ))}
@@ -1044,19 +1051,19 @@ export const DriverDashboard = () => {
             )}
 
             {/* Earnings Breakdown Chart */}
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Earnings Breakdown</h2>
+            <div className="bg-slate-900/50 rounded-2xl border border-white/10 shadow-xl p-6 backdrop-blur-md">
+              <h2 className="text-lg font-bold text-slate-100 mb-4">Earnings Breakdown</h2>
               {analyticsData.earningsBreakdown && analyticsData.earningsBreakdown.length > 0 ? (
                 <div className="space-y-4">
                   {analyticsData.earningsBreakdown.map((item, index) => (
                     <div key={index}>
-                      <div className="flex justify-between text-sm mb-1">
-                        <span className="text-gray-600">{item.date}</span>
-                        <span className="font-bold text-gray-900">₹{item.earnings.toFixed(2)}</span>
+                      <div className="flex justify-between text-sm mb-1.5">
+                        <span className="text-slate-300 font-medium">{item.date}</span>
+                        <span className="font-bold text-slate-100">₹{item.earnings.toFixed(2)}</span>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div className="w-full bg-white/5 rounded-full h-2.5 overflow-hidden border border-white/5">
                         <div
-                          className="bg-green-600 h-2 rounded-full"
+                          className="bg-gradient-to-r from-emerald-500 to-teal-400 h-2.5 rounded-full transition-all duration-500"
                           style={{ width: `${(item.earnings / Math.max(...analyticsData.earningsBreakdown.map(e => e.earnings))) * 100}%` }}
                         ></div>
                       </div>
@@ -1064,40 +1071,40 @@ export const DriverDashboard = () => {
                   ))}
                 </div>
               ) : (
-                <p className="text-center text-gray-500 py-8">No earnings data for this period</p>
+                <p className="text-center text-slate-500 py-8">No earnings data for this period</p>
               )}
             </div>
 
             {/* Payout History */}
-            <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-              <div className="p-6 border-b">
-                <h2 className="text-lg font-semibold text-gray-900">Payout History</h2>
-                <p className="text-sm text-gray-500 mt-1">Daily payouts are processed automatically at 11:59 PM</p>
+            <div className="bg-slate-900/50 rounded-2xl border border-white/10 shadow-xl overflow-hidden backdrop-blur-md">
+              <div className="p-6 border-b border-white/10">
+                <h2 className="text-lg font-bold text-slate-100">Payout History</h2>
+                <p className="text-xs text-slate-400 mt-1">Daily payouts are processed automatically at 11:59 PM</p>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-gray-50">
+                  <thead className="bg-white/5 border-b border-white/10">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Payout ID</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Rides</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                      <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">Payout ID</th>
+                      <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">Date</th>
+                      <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">Rides</th>
+                      <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">Amount</th>
+                      <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">Status</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-200">
+                  <tbody className="divide-y divide-white/5">
                     {analyticsData.payoutHistory && analyticsData.payoutHistory.map((payout) => (
-                      <tr key={payout._id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      <tr key={payout._id} className="hover:bg-purple-500/10 transition-colors">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-mono font-medium text-purple-300">
                           {payout.payoutId}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
                           {new Date(payout.payoutDate).toLocaleDateString()}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
                           {payout.rideCount} rides
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-emerald-400">
                           ₹{payout.amount.toFixed(2)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
