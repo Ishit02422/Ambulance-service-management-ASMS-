@@ -21,6 +21,7 @@ export const Register = ({ onToggleLogin }) => {
     photoFile: null
   });
 
+  const [devOtp, setDevOtp] = useState('');
   const [error, setError] = useState('');
   const [showOtp, setShowOtp] = useState(false);
   const [otp, setOtp] = useState('');
@@ -41,24 +42,18 @@ export const Register = ({ onToggleLogin }) => {
       return;
     }
 
-    // LICENSE → exactly 16 alphanumeric chars
+    // LICENSE → 6 to 20 alphanumeric chars
     if (name === "licenseNumber") {
-      let cleaned = value.replace(/[^A-Za-z0-9]/g, "").toUpperCase();
-      cleaned = cleaned.slice(0, 16);
+      let cleaned = value.replace(/[^A-Za-z0-9-]/g, "").toUpperCase();
+      cleaned = cleaned.slice(0, 20);
       setFormData({ ...formData, licenseNumber: cleaned });
       return;
     }
 
-    // VEHICLE → auto-format to GJ-05-GV-4446
+    // VEHICLE → auto-format or standard alphanumeric
     if (name === "vehicleNumber") {
-      let cleaned = value.replace(/[^A-Za-z0-9]/g, "").toUpperCase();
-
-      if (cleaned.length > 2) cleaned = cleaned.slice(0, 2) + "-" + cleaned.slice(2);
-      if (cleaned.length > 5) cleaned = cleaned.slice(0, 5) + "-" + cleaned.slice(5);
-      if (cleaned.length > 8) cleaned = cleaned.slice(0, 8) + "-" + cleaned.slice(8);
-
-      cleaned = cleaned.slice(0, 13);
-
+      let cleaned = value.replace(/[^A-Za-z0-9-]/g, "").toUpperCase();
+      cleaned = cleaned.slice(0, 15);
       setFormData({ ...formData, vehicleNumber: cleaned });
       return;
     }
@@ -73,8 +68,8 @@ export const Register = ({ onToggleLogin }) => {
 
     // VALIDATION REGEX
     const phoneRegex = /^[0-9]{10}$/;
-    const licenseRegex = /^[A-Z0-9]{16}$/; // NEW RULE: any 16 characters
-    const vehicleRegex = /^[A-Z]{2}-[0-9]{2}-[A-Z]{2}-[0-9]{4}$/;
+    const licenseRegex = /^[A-Za-z0-9\s-]{6,20}$/;
+    const vehicleRegex = /^[A-Za-z0-9\s-]{6,15}$/;
     const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])[A-Za-z\d!@#$%^&*(),.?":{}|<>]{6,}$/;
 
     // PASSWORD VALIDATION
@@ -94,7 +89,7 @@ export const Register = ({ onToggleLogin }) => {
     // DRIVER VALIDATION
     if (formData.role === "driver") {
       if (!licenseRegex.test(formData.licenseNumber)) {
-        setError("Invalid License Number. Must be exactly 16 alphanumeric characters.");
+        setError("Invalid License Number. Must be between 6 and 20 alphanumeric characters.");
         setLoading(false);
         return;
       }
@@ -124,6 +119,10 @@ export const Register = ({ onToggleLogin }) => {
 
       const response = await register(data);
       if (response.requiresOtp) {
+        if (response.devOtp) {
+          setDevOtp(response.devOtp);
+          setOtp(response.devOtp);
+        }
         setShowOtp(true);
       } else {
         onToggleLogin();
@@ -159,6 +158,12 @@ export const Register = ({ onToggleLogin }) => {
             <h1 className="text-2xl font-bold text-gray-900">Verify Email</h1>
             <p className="text-gray-600 mt-2">Enter the OTP sent to {formData.email}</p>
           </div>
+
+          {devOtp && (
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800 text-center">
+              💡 <strong>OTP (Local Mode):</strong> <span className="font-mono font-bold text-lg text-blue-900 tracking-wider ml-1">{devOtp}</span>
+            </div>
+          )}
 
           {error && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
@@ -309,7 +314,7 @@ export const Register = ({ onToggleLogin }) => {
                 {/* License Number */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    License Number (16 characters)
+                    License Number (e.g. GJ05202300012345)
                   </label>
                   <input
                     type="text"

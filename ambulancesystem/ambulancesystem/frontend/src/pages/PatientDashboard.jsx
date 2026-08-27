@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
 import { api } from '../services/api';
 import { calculateDistance } from '../utils/helpers';
+import { geocodeLocation, reverseGeocodeLocation, KNOWN_LOCATIONS, SURAT_HOSPITALS } from '../utils/geocoding';
 import { MapView } from '../components/MapView';
-import { Ambulance, MapPin, Clock, IndianRupee, Phone, User, LogOut, History, Bell, Check, X, QrCode, Navigation, Calendar, Filter, Star, Repeat } from 'lucide-react';
+import { Ambulance, MapPin, Clock, IndianRupee, Phone, User, LogOut, History, Bell, Check, X, QrCode, Navigation, Calendar, Filter, Star, Repeat, Building2, Search, HeartPulse } from 'lucide-react';
 
 export const PatientDashboard = () => {
   const { user, logout } = useAuth();
@@ -53,9 +54,39 @@ export const PatientDashboard = () => {
     'Other'
   ];
 
-  const [hospitals, setHospitals] = useState([]);
+  // Hospitals & Location States (Loaded with full Surat Hospitals)
+  const [hospitals, setHospitals] = useState(SURAT_HOSPITALS);
   const [showHospitalSuggestions, setShowHospitalSuggestions] = useState(false);
+  const [selectedHospitalIndex, setSelectedHospitalIndex] = useState(-1);
+  const [showPickupSuggestions, setShowPickupSuggestions] = useState(false);
+  const [selectedPickupIndex, setSelectedPickupIndex] = useState(-1);
+  const [pickupSuggestions, setPickupSuggestions] = useState([]);
+  const [isSearchingPickup, setIsSearchingPickup] = useState(false);
+  const [isSearchingLocation, setIsSearchingLocation] = useState(false);
+  const [dbSearchResults, setDbSearchResults] = useState([]);
+  const [isSearchingDB, setIsSearchingDB] = useState(false);
+  const searchTimerRef = useRef(null);
+  const pickupTimerRef = useRef(null);
+
+  // Clean up timers on component unmount
+  useEffect(() => {
+    return () => {
+      if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+      if (pickupTimerRef.current) clearTimeout(pickupTimerRef.current);
+    };
+  }, []);
+
   const [fareSettings, setFareSettings] = useState(null);
+
+  const [bookingForm, setBookingForm] = useState({
+    pickupLat: 21.1950,
+    pickupLng: 72.7950,
+    pickupAddress: 'Adajan, Surat',
+    dropLat: 21.1702,
+    dropLng: 72.8311,
+    dropAddress: 'New Civil Hospital, Majura Gate, Ring Road, Surat',
+    ambulanceType: 'normal'
+  });
 
   // Load fare settings from backend
   useEffect(() => {
@@ -69,6 +100,307 @@ export const PatientDashboard = () => {
     };
     loadFareSettings();
   }, []);
+
+  // Helper to format backend hospital data
+  const formatBackendHospital = (h, i) => {
+    const coords = h.location?.coordinates;
+    return {
+      id: h._id || `backend_${i}`,
+      name: h.name,
+      address: h.address || 'Surat',
+      lat: coords ? coords[1] : (h.lat || 21.1702),
+      lng: coords ? coords[0] : (h.lng || 72.8311),
+      specialties: h.specialties || ['General', 'Emergency'],
+      phone: h.phone || '',
+      fromDB: true
+    };
+  };
+
+  // Deduplicate hospitals by name
+  const deduplicateHospitals = (list) => {
+    const seen = new Set();
+    const result = [];
+    for (const item of list) {
+      const key = item.name.toLowerCase().trim();
+      if (!seen.has(key)) {
+        seen.add(key);
+        result.push(item);
+      }
+    }
+    return result;
+  };
+
+  // Fetch ALL Hospitals from backend on mount and merge with local list
+  useEffect(() => {
+    const fetchHospitals = async () => {
+      try {
+        const data = await api.getAllHospitals();
+        if (data && data.length > 0) {
+          const formattedBackend = data.map(formatBackendHospital);
+          setHospitals(deduplicateHospitals([...formattedBackend, ...SURAT_HOSPITALS]));
+        } else {
+          setHospitals(SURAT_HOSPITALS);
+        }
+      } catch (err) {
+        console.warn('Using built-in Surat hospitals list:', err);
+        setHospitals(SURAT_HOSPITALS);
+      }
+    };
+    fetchHospitals();
+  }, []);
+
+  // Live search from MongoDB database & OpenStreetMap (debounced) when user types in drop field
+  const searchHospitalsFromDB = async (query) => {
+    if (!query || query.trim().length < 2) {
+      setDbSearchResults([]);
+      setIsSearchingDB(false);
+      return;
+    }
+    const cleanQuery = query.trim();
+    setIsSearchingDB(true);
+    try {
+      let dbList = [];
+      // 1. Search backend MongoDB database
+      try {
+        const data = await api.searchHospitals(cleanQuery);
+        if (data && data.length > 0) {
+          dbList = data.map(formatBackendHospital);
+        }
+      } catch (e) {
+        console.warn('Backend hospital search error:', e);
+      }
+
+      // 2. OpenStreetMap live fallback for any unlisted hospital/clinic in Surat
+      try {
+        const searchQuery = cleanQuery.toLowerCase().includes('surat') ? cleanQuery : `${cleanQuery}, Surat`;
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=5&countrycodes=in`
+        );
+        if (res.ok) {
+          const osmData = await res.json();
+          if (Array.isArray(osmData)) {
+            const osmHospitals = osmData.map((item, idx) => ({
+              id: `osm_${item.place_id || idx}`,
+              name: item.name || (item.display_name ? item.display_name.split(',')[0] : cleanQuery),
+              address: item.display_name || `${cleanQuery}, Surat`,
+              lat: parseFloat(item.lat),
+              lng: parseFloat(item.lon),
+              specialties: ['Hospital / Healthcare'],
+              fromDB: true
+            }));
+            dbList = deduplicateHospitals([...dbList, ...osmHospitals]);
+          }
+        }
+      } catch (osmErr) {
+        console.warn('OSM search error:', osmErr);
+      }
+
+      setDbSearchResults(dbList);
+    } catch (err) {
+      console.warn('DB hospital search error:', err);
+      setDbSearchResults([]);
+    } finally {
+      setIsSearchingDB(false);
+    }
+  };
+
+  // Debounced trigger for DB search (300ms delay)
+  const triggerDBSearch = (query) => {
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    searchTimerRef.current = setTimeout(() => {
+      searchHospitalsFromDB(query);
+    }, 300);
+  };
+
+  // Real-time live address/location search for Pickup (Google Maps style)
+  const searchPickupLocations = async (query) => {
+    if (!query || query.trim().length < 2) {
+      setPickupSuggestions([]);
+      setIsSearchingPickup(false);
+      return;
+    }
+    const clean = query.trim().toLowerCase();
+    setIsSearchingPickup(true);
+
+    try {
+      let apiResults = [];
+
+      // 1. Search Photon API (Fast OpenStreetMap Elasticsearch geocoder with typo tolerance)
+      try {
+        const photonQuery = clean.includes('surat') ? clean : `${clean} Surat`;
+        const res = await fetch(
+          `https://photon.komoot.io/api/?q=${encodeURIComponent(photonQuery)}&lat=21.1702&lon=72.8311&limit=6`
+        );
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.features && data.features.length > 0) {
+            const list = data.features.map(f => {
+              const p = f.properties;
+              const title = p.name || query.trim();
+              const sub = [p.street, p.district, p.city || 'Surat', p.state || 'Gujarat'].filter(Boolean).join(', ');
+              return {
+                name: title,
+                address: sub || `${title}, Surat`,
+                lat: f.geometry.coordinates[1],
+                lng: f.geometry.coordinates[0],
+                type: 'address'
+              };
+            });
+            apiResults.push(...list);
+          }
+        }
+      } catch (phErr) {
+        console.warn('Photon pickup search error:', phErr);
+      }
+
+      // 2. Fallback query Nominatim
+      if (apiResults.length < 3) {
+        try {
+          const searchQuery = clean.includes('surat') ? clean : `${clean}, Surat, Gujarat`;
+          const osmRes = await fetch(
+            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=5&countrycodes=in&addressdetails=1`
+          );
+          if (osmRes.ok) {
+            const osmData = await osmRes.json();
+            if (Array.isArray(osmData) && osmData.length > 0) {
+              const osmList = osmData.map(item => ({
+                name: item.name || (item.display_name ? item.display_name.split(',')[0] : query.trim()),
+                address: item.display_name,
+                lat: parseFloat(item.lat),
+                lng: parseFloat(item.lon),
+                type: 'address'
+              }));
+              apiResults.push(...osmList);
+            }
+          }
+        } catch (osmErr) {
+          console.warn('OSM search error:', osmErr);
+        }
+      }
+
+      setPickupSuggestions(apiResults);
+    } catch (err) {
+      console.warn('Pickup search error:', err);
+      setPickupSuggestions([]);
+    } finally {
+      setIsSearchingPickup(false);
+    }
+  };
+
+  const triggerPickupSearch = (query) => {
+    if (pickupTimerRef.current) clearTimeout(pickupTimerRef.current);
+    pickupTimerRef.current = setTimeout(() => {
+      searchPickupLocations(query);
+    }, 200);
+  };
+
+  const getFilteredPickupSuggestions = () => {
+    const rawInput = bookingForm.pickupAddress || '';
+    const raw = rawInput.trim().toLowerCase();
+    if (!raw || raw.length < 2) {
+      return KNOWN_LOCATIONS.slice(0, 8).map(l => ({
+        name: l.name,
+        address: `${l.name}, Surat, Gujarat`,
+        lat: l.lat,
+        lng: l.lng,
+        type: 'area'
+      }));
+    }
+
+    const queryWords = raw.split(/[\s,.-]+/).filter(w => w.length > 0);
+    const instantMatches = [];
+
+    // 1. Direct typed custom address with matched area coordinates in Surat
+    const matchedArea = KNOWN_LOCATIONS.find(loc => {
+      const lName = (loc.name || '').toLowerCase();
+      return raw.includes(lName) || lName.includes(raw);
+    });
+
+    if (matchedArea) {
+      instantMatches.push({
+        name: rawInput.trim(),
+        address: `${matchedArea.name}, Surat, Gujarat`,
+        lat: matchedArea.lat,
+        lng: matchedArea.lng,
+        type: 'address'
+      });
+      if (raw !== matchedArea.name.toLowerCase()) {
+        instantMatches.push({
+          name: matchedArea.name,
+          address: `${matchedArea.name}, Surat, Gujarat`,
+          lat: matchedArea.lat,
+          lng: matchedArea.lng,
+          type: 'area'
+        });
+      }
+    } else {
+      // General Surat pin for custom typed address
+      instantMatches.push({
+        name: rawInput.trim(),
+        address: `${rawInput.trim()}, Surat, Gujarat`,
+        lat: 21.1950,
+        lng: 72.7950,
+        type: 'address'
+      });
+    }
+
+    // 2. All areas in KNOWN_LOCATIONS matching any typed word
+    const matchingAreas = KNOWN_LOCATIONS
+      .filter(l => {
+        const lName = (l.name || '').toLowerCase();
+        return queryWords.some(w => w.length >= 2 && lName.includes(w)) &&
+               !instantMatches.some(m => m.name.toLowerCase() === lName);
+      })
+      .map(l => ({
+        name: l.name,
+        address: `${l.name}, Surat, Gujarat`,
+        lat: l.lat,
+        lng: l.lng,
+        type: 'area'
+      }));
+    instantMatches.push(...matchingAreas);
+
+    // 3. Matching hospitals
+    const matchingHospitals = hospitals
+      .filter(h => {
+        const hName = (h.name || '').toLowerCase();
+        const hAddr = (h.address || '').toLowerCase();
+        return queryWords.some(w => w.length >= 3 && (hName.includes(w) || hAddr.includes(w))) &&
+               !instantMatches.some(m => m.name.toLowerCase() === hName);
+      })
+      .map(h => ({
+        name: h.name,
+        address: h.address || 'Surat, Gujarat',
+        lat: h.lat !== undefined ? h.lat : (h.location?.coordinates?.[1] || 21.1702),
+        lng: h.lng !== undefined ? h.lng : (h.location?.coordinates?.[0] || 72.8311),
+        type: 'hospital'
+      }));
+    instantMatches.push(...matchingHospitals);
+
+    // 4. Merge instant local matches with async API results from Photon / Nominatim
+    const combined = [...instantMatches, ...pickupSuggestions];
+    const seen = new Set();
+    const result = [];
+    for (const item of combined) {
+      const key = (item.name || '').toLowerCase().trim();
+      if (key && !seen.has(key)) {
+        seen.add(key);
+        result.push(item);
+      }
+    }
+    return result.slice(0, 10);
+  };
+
+  const handlePickupSelect = (item) => {
+    setBookingForm(prev => ({
+      ...prev,
+      pickupAddress: item.address || `${item.name}, Surat`,
+      pickupLat: item.lat,
+      pickupLng: item.lng
+    }));
+    setShowPickupSuggestions(false);
+    setSelectedPickupIndex(-1);
+  };
 
   useEffect(() => {
     // Check for active ride
@@ -86,7 +418,6 @@ export const PatientDashboard = () => {
     if (!socket || !activeRide) return;
 
     const handleDriverLocation = (data) => {
-      // data contains: { driverId, bookingId, location, accuracy, speed, heading, timestamp }
       console.log('📍 Received driver location:', {
         lat: data.location.latitude?.toFixed(6) || data.location.lat?.toFixed(6),
         lng: data.location.longitude?.toFixed(6) || data.location.lng?.toFixed(6),
@@ -95,7 +426,7 @@ export const PatientDashboard = () => {
         timestamp: data.timestamp
       });
 
-      // Update driver location on map (normalize coordinates)
+      // Update driver location on map
       setDriverLocation({
         lat: data.location.latitude || data.location.lat,
         lng: data.location.longitude || data.location.lng,
@@ -113,54 +444,182 @@ export const PatientDashboard = () => {
     };
   }, [socket, activeRide]);
 
-  const [bookingForm, setBookingForm] = useState({
-    pickupLat: 21.1702,
-    pickupLng: 72.8311,
-    pickupAddress: 'Surat, Gujarat',
-    dropLat: 21.2035,
-    dropLng: 72.8500,
-    dropAddress: 'Civil Hospital, Surat',
-    ambulanceType: 'normal'
-  });
-
   const getCurrentLocation = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        (position) => {
+        async (position) => {
+          const lat = position.coords.latitude;
+          const lng = position.coords.longitude;
+          const address = await reverseGeocodeLocation(lat, lng);
           setBookingForm(prev => ({
             ...prev,
-            pickupLat: position.coords.latitude,
-            pickupLng: position.coords.longitude,
-            pickupAddress: `Current Location (${position.coords.latitude.toFixed(4)}, ${position.coords.longitude.toFixed(4)})`
+            pickupLat: lat,
+            pickupLng: lng,
+            pickupAddress: address || `Current Location (${lat.toFixed(4)}, ${lng.toFixed(4)})`
           }));
         },
         (error) => {
           console.error("Error getting location", error);
           alert("Could not get your location. Please enable location services.");
-        }
+        },
+        { enableHighAccuracy: true }
       );
     } else {
       alert("Geolocation is not supported by this browser.");
     }
   };
 
-  // Mock geocoding to simulate distance changes
-  const simulateGeocoding = (field) => {
-    // Add small random variation to coordinates to simulate different locations
-    const variation = (Math.random() - 0.5) * 0.01;
-    if (field === 'pickup') {
-      setBookingForm(prev => ({
-        ...prev,
-        pickupLat: 21.1702 + variation,
-        pickupLng: 72.8311 + variation
-      }));
-    } else {
-      setBookingForm(prev => ({
-        ...prev,
-        dropLat: 21.2035 + variation,
-        dropLng: 72.8500 + variation
-      }));
+  // Real Geocoding function when user finishes typing
+  const handleGeocodeAddress = async (address, field) => {
+    if (!address || address.trim().length < 2) return;
+    try {
+      const result = await geocodeLocation(address);
+      if (result) {
+        if (field === 'pickup') {
+          setBookingForm(prev => ({
+            ...prev,
+            pickupLat: result.lat,
+            pickupLng: result.lng
+          }));
+        } else {
+          setBookingForm(prev => ({
+            ...prev,
+            dropLat: result.lat,
+            dropLng: result.lng
+          }));
+        }
+      }
+    } catch (err) {
+      console.error('Geocoding error:', err);
     }
+  };
+
+  const getFilteredHospitalSuggestions = () => {
+    const rawQuery = (bookingForm.dropAddress || '').trim().toLowerCase();
+    
+    // Merge local hospitals with DB & OSM search results (deduplicate)
+    const allHospitals = deduplicateHospitals([...hospitals, ...dbSearchResults]);
+
+    // Calculate distance for all hospitals from current pickup coordinates
+    const hospitalsWithDistance = allHospitals.map(h => {
+      const hLat = h.lat !== undefined ? h.lat : (h.location?.coordinates?.[1] || 21.1702);
+      const hLng = h.lng !== undefined ? h.lng : (h.location?.coordinates?.[0] || 72.8311);
+      const dist = calculateDistance(
+        bookingForm.pickupLat,
+        bookingForm.pickupLng,
+        hLat,
+        hLng
+      );
+      return { 
+        ...h, 
+        lat: hLat,
+        lng: hLng,
+        distanceKm: dist, 
+        isHospital: true 
+      };
+    });
+
+    if (!rawQuery) {
+      // If empty, sort by nearest to pickup and return top 10
+      return hospitalsWithDistance.sort((a, b) => a.distanceKm - b.distanceKm).slice(0, 10);
+    }
+
+    const queryWords = rawQuery.split(/[\s,.-]+/).filter(w => w.length > 0);
+
+    // Filter by name, address, or specialties using flexible multi-word matching
+    const matchedHospitals = hospitalsWithDistance.filter(h => {
+      const name = (h.name || '').toLowerCase();
+      const addr = (h.address || '').toLowerCase();
+      const specs = (h.specialties || []).map(s => (s || '').toLowerCase()).join(' ');
+      const combined = `${name} ${addr} ${specs}`;
+      
+      // Matches entire phrase or all typed words
+      return combined.includes(rawQuery) || (queryWords.length > 0 && queryWords.every(w => combined.includes(w)));
+    });
+
+    // Also match known landmarks/areas in Surat that aren't already in matched hospitals
+    const matchedLandmarks = KNOWN_LOCATIONS
+      .filter(l => {
+        const lName = (l.name || '').toLowerCase();
+        const matches = lName.includes(rawQuery) || (queryWords.length > 0 && queryWords.every(w => lName.includes(w)));
+        return matches && !matchedHospitals.some(h => (h.name || '').toLowerCase().includes(lName));
+      })
+      .map((l, i) => ({
+        id: `loc_${i}`,
+        name: l.name,
+        address: `${l.name}, Surat`,
+        lat: l.lat,
+        lng: l.lng,
+        specialties: ['Landmark / Area'],
+        distanceKm: calculateDistance(bookingForm.pickupLat, bookingForm.pickupLng, l.lat, l.lng),
+        isHospital: false
+      }));
+
+    const allMatches = [...matchedHospitals, ...matchedLandmarks];
+    
+    // Sort matches: prioritize startsWith, then sort by distance
+    return allMatches.sort((a, b) => {
+      const aStarts = (a.name || '').toLowerCase().startsWith(rawQuery);
+      const bStarts = (b.name || '').toLowerCase().startsWith(rawQuery);
+      if (aStarts && !bStarts) return -1;
+      if (!aStarts && bStarts) return 1;
+      return a.distanceKm - b.distanceKm;
+    });
+  };
+
+  const handleHospitalSelect = (hospital) => {
+    const lat = hospital.lat !== undefined ? hospital.lat : (hospital.location?.coordinates?.[1] || 21.1702);
+    const lng = hospital.lng !== undefined ? hospital.lng : (hospital.location?.coordinates?.[0] || 72.8311);
+
+    setBookingForm(prev => ({
+      ...prev,
+      dropAddress: `${hospital.name}, ${hospital.address || 'Surat'}`,
+      dropLat: lat,
+      dropLng: lng
+    }));
+    setShowHospitalSuggestions(false);
+    setSelectedHospitalIndex(-1);
+  };
+
+  const handleCustomSearchInSurat = async (customQuery) => {
+    if (!customQuery || !customQuery.trim()) return;
+    setIsSearchingLocation(true);
+    try {
+      const result = await geocodeLocation(customQuery);
+      if (result) {
+        setBookingForm(prev => ({
+          ...prev,
+          dropAddress: result.displayName || `${customQuery}, Surat`,
+          dropLat: result.lat,
+          dropLng: result.lng
+        }));
+        setShowHospitalSuggestions(false);
+      } else {
+        alert(`Could not find "${customQuery}" on map. Please select a hospital from the list or enter a known area in Surat.`);
+      }
+    } catch (err) {
+      console.error('Error finding location:', err);
+    } finally {
+      setIsSearchingLocation(false);
+    }
+  };
+
+  const handlePickupChangeFromMap = ({ lat, lng, address }) => {
+    setBookingForm(prev => ({
+      ...prev,
+      pickupLat: lat,
+      pickupLng: lng,
+      pickupAddress: address || prev.pickupAddress
+    }));
+  };
+
+  const handleDropChangeFromMap = ({ lat, lng, address }) => {
+    setBookingForm(prev => ({
+      ...prev,
+      dropLat: lat,
+      dropLng: lng,
+      dropAddress: address || prev.dropAddress
+    }));
   };
 
   const [profileForm, setProfileForm] = useState({
@@ -415,15 +874,19 @@ export const PatientDashboard = () => {
       bookingForm.dropLat,
       bookingForm.dropLng
     );
-    const type = ambulanceTypes.find(t => t.value === bookingForm.ambulanceType);
-    const fare = type.baseFare + (distance * type.perKm);
+    const type = ambulanceTypes.find(t => t.value === bookingForm.ambulanceType) || ambulanceTypes[0];
+    const base = type.baseFare || 200;
+    const perKm = type.perKm || 15;
+    const fare = base + (distance * perKm);
     return { distance: distance, fare: Math.round(fare) };
   };
 
-  const [estimatedFare, setEstimatedFare] = useState(null);
+  const [estimatedFare, setEstimatedFare] = useState(() => {
+    const dist = calculateDistance(21.1950, 72.7950, 21.1702, 72.8311);
+    return { distance: dist.toFixed(2), fare: Math.round(200 + dist * 15) };
+  });
 
   useEffect(() => {
-    if (!fareSettings) return; // Wait for settings to load
     const { distance, fare } = calculateFare();
     setEstimatedFare({ distance: distance.toFixed(2), fare: Math.round(fare) });
   }, [bookingForm.pickupLat, bookingForm.pickupLng, bookingForm.dropLat, bookingForm.dropLng, bookingForm.ambulanceType, fareSettings]);
@@ -502,7 +965,24 @@ export const PatientDashboard = () => {
         // Create Razorpay order
         const orderData = await api.createRazorpayOrder(pendingBookingData.fare, booking._id);
         
-        // Initialize Razorpay checkout
+        if (orderData.isMock || !window.Razorpay) {
+          // Seamless test/demo mode payment
+          const verifyData = {
+            razorpay_order_id: orderData.orderId,
+            razorpay_payment_id: `pay_demo_${Date.now()}`,
+            razorpay_signature: 'mock_signature',
+            bookingId: booking._id
+          };
+          await api.verifyRazorpayPayment(verifyData);
+          alert(`✅ Online Payment Successful! (₹${pendingBookingData.fare})\n\nBooking Confirmed!\nBooking ID: ${booking.bookingId || booking._id}\nPayment ID: ${verifyData.razorpay_payment_id}`);
+          setShowPaymentConfirmModal(false);
+          setPendingBookingData(null);
+          loadBookings();
+          setActiveTab('history');
+          return;
+        }
+
+        // Initialize Razorpay checkout with live keys
         const options = {
           key: orderData.key,
           amount: orderData.amount,
@@ -577,29 +1057,6 @@ export const PatientDashboard = () => {
       console.error('Error submitting feedback:', error);
       alert('Failed to submit feedback');
     }
-  };
-
-  useEffect(() => {
-    // Fetch nearest hospitals when pickup location changes
-    const fetchHospitals = async () => {
-      try {
-        const data = await api.getNearestHospitals(bookingForm.pickupLat, bookingForm.pickupLng);
-        setHospitals(data);
-      } catch (error) {
-        console.error('Error fetching hospitals:', error);
-      }
-    };
-    fetchHospitals();
-  }, [bookingForm.pickupLat, bookingForm.pickupLng]);
-
-  const handleHospitalSelect = (hospital) => {
-    setBookingForm(prev => ({
-      ...prev,
-      dropAddress: hospital.name,
-      dropLat: hospital.location.coordinates[1],
-      dropLng: hospital.location.coordinates[0]
-    }));
-    setShowHospitalSuggestions(false);
   };
 
   return (
@@ -756,82 +1213,384 @@ export const PatientDashboard = () => {
               </h2>
               
               <form onSubmit={handleBookingSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Pickup Location</label>
+                {/* Pickup Location */}
+                <div className="relative">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Pickup Location
+                  </label>
                   <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={bookingForm.pickupAddress}
-                      onChange={(e) => setBookingForm({...bookingForm, pickupAddress: e.target.value})}
-                      onBlur={() => simulateGeocoding('pickup')}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                      required
-                    />
+                    <div className="relative flex-1">
+                      <input
+                        type="text"
+                        value={bookingForm.pickupAddress}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setBookingForm({...bookingForm, pickupAddress: val});
+                          setShowPickupSuggestions(true);
+                          setSelectedPickupIndex(-1);
+                          triggerPickupSearch(val);
+                        }}
+                        onFocus={() => setShowPickupSuggestions(true)}
+                        onBlur={() => {
+                          setTimeout(() => setShowPickupSuggestions(false), 250);
+                        }}
+                        onKeyDown={(e) => {
+                          const filtered = getFilteredPickupSuggestions();
+                          if (e.key === 'ArrowDown') {
+                            e.preventDefault();
+                            setSelectedPickupIndex(prev => (prev < filtered.length - 1 ? prev + 1 : 0));
+                          } else if (e.key === 'ArrowUp') {
+                            e.preventDefault();
+                            setSelectedPickupIndex(prev => (prev > 0 ? prev - 1 : filtered.length - 1));
+                          } else if (e.key === 'Enter') {
+                            e.preventDefault();
+                            if (selectedPickupIndex >= 0 && selectedPickupIndex < filtered.length) {
+                              handlePickupSelect(filtered[selectedPickupIndex]);
+                            } else if (filtered.length > 0 && bookingForm.pickupAddress.trim()) {
+                              handlePickupSelect(filtered[0]);
+                            } else {
+                              handleGeocodeAddress(bookingForm.pickupAddress, 'pickup');
+                              setShowPickupSuggestions(false);
+                            }
+                          } else if (e.key === 'Escape') {
+                            setShowPickupSuggestions(false);
+                          }
+                        }}
+                        className="w-full pl-9 pr-8 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent shadow-sm"
+                        placeholder="Search pickup address, society, landmark, or area..."
+                        required
+                        autoComplete="off"
+                      />
+                      <MapPin className="w-4 h-4 text-blue-500 absolute left-3 top-3.5 pointer-events-none" />
+                      {bookingForm.pickupAddress && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setBookingForm({ ...bookingForm, pickupAddress: '' });
+                            setShowPickupSuggestions(true);
+                          }}
+                          className="absolute right-2.5 top-3 text-gray-400 hover:text-gray-600 p-0.5 rounded-full hover:bg-gray-100"
+                          title="Clear Pickup"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+
+                      {/* Pickup Suggestions Dropdown */}
+                      {showPickupSuggestions && (
+                        <div className="absolute z-30 w-full min-w-[320px] mt-1.5 bg-white/95 backdrop-blur-sm border border-slate-200 rounded-2xl shadow-2xl max-h-80 overflow-y-auto custom-scrollbar divide-y divide-slate-100 ring-1 ring-black/5 animate-in fade-in-50 duration-150">
+                          <div className="px-3 py-2 bg-gradient-to-r from-blue-50/90 via-sky-50/60 to-indigo-50/50 border-b border-blue-100 text-[11px] font-semibold text-blue-900 flex items-center justify-between sticky top-0 z-10 backdrop-blur-md">
+                            <span className="flex items-center gap-1.5">
+                              <MapPin className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                              <span>{bookingForm.pickupAddress.trim().length >= 2 ? `Matching Locations` : 'Popular Surat Areas'}</span>
+                              {isSearchingPickup && (
+                                <span className="inline-flex items-center gap-1 text-[10px] text-blue-700 font-medium bg-blue-100/70 px-1.5 py-0.5 rounded-full animate-pulse">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-ping" />
+                                  Searching...
+                                </span>
+                              )}
+                            </span>
+                            <span className="text-[10px] text-slate-600 bg-white/90 px-2 py-0.5 rounded-full border border-blue-200/60 font-medium shadow-2xs">
+                              {getFilteredPickupSuggestions().length} found
+                            </span>
+                          </div>
+
+                          {(() => {
+                            const filtered = getFilteredPickupSuggestions();
+                            if (filtered.length === 0) {
+                              return (
+                                <div className="p-4 text-center">
+                                  <p className="text-xs text-gray-600 mb-2">
+                                    No direct match for "<strong>{bookingForm.pickupAddress}</strong>"
+                                  </p>
+                                  <button
+                                    type="button"
+                                    onMouseDown={(e) => {
+                                      e.preventDefault();
+                                      handleGeocodeAddress(bookingForm.pickupAddress, 'pickup');
+                                      setShowPickupSuggestions(false);
+                                    }}
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-xl shadow-sm transition-colors"
+                                  >
+                                    <Search className="w-3 h-3" />
+                                    Search exact location on Map
+                                  </button>
+                                </div>
+                              );
+                            }
+
+                            return (
+                              <>
+                                {filtered.slice(0, 10).map((loc, idx) => {
+                                  const isSelected = selectedPickupIndex === idx;
+                                  const isHosp = loc.type === 'hospital';
+                                  return (
+                                    <div
+                                      key={idx}
+                                      onMouseDown={(e) => {
+                                        e.preventDefault();
+                                        handlePickupSelect(loc);
+                                      }}
+                                      onMouseEnter={() => setSelectedPickupIndex(idx)}
+                                      className={`p-3 cursor-pointer transition-all flex items-start gap-3 ${
+                                        isSelected
+                                          ? 'bg-blue-50/90 border-l-4 border-blue-600 pl-2'
+                                          : 'hover:bg-slate-50/90'
+                                      }`}
+                                    >
+                                      <div className={`p-2 rounded-xl shrink-0 mt-0.5 border ${
+                                        isHosp
+                                          ? (isSelected ? 'bg-red-600 text-white border-red-600 shadow-sm' : 'bg-red-50 text-red-600 border-red-100')
+                                          : (isSelected ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-blue-50 text-blue-600 border-blue-100')
+                                      }`}>
+                                        {isHosp ? (
+                                          <Building2 className="w-4 h-4" />
+                                        ) : (
+                                          <MapPin className="w-4 h-4" />
+                                        )}
+                                      </div>
+
+                                      <div className="flex-1 min-w-0">
+                                        <div className="font-semibold text-xs text-slate-900 truncate" title={loc.name}>
+                                          {loc.name}
+                                        </div>
+                                        <div className="text-[11px] text-slate-500 truncate mt-0.5 flex items-center gap-1" title={loc.address}>
+                                          <MapPin className="w-3 h-3 shrink-0 text-slate-400" />
+                                          <span>{loc.address}</span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+
+                                {bookingForm.pickupAddress.trim().length >= 2 && (
+                                  <div
+                                    onMouseDown={(e) => {
+                                      e.preventDefault();
+                                      handleGeocodeAddress(bookingForm.pickupAddress, 'pickup');
+                                      setShowPickupSuggestions(false);
+                                    }}
+                                    className="p-2.5 bg-slate-50/80 hover:bg-slate-100/90 cursor-pointer text-xs text-blue-600 flex items-center justify-between font-medium border-t border-slate-100 transition-colors"
+                                  >
+                                    <span className="flex items-center gap-1.5">
+                                      <Search className="w-3.5 h-3.5 text-blue-500" />
+                                      Search "{bookingForm.pickupAddress}" across Map
+                                    </span>
+                                    <span className="text-[10px] text-slate-400 bg-white px-1.5 py-0.5 rounded border border-slate-200">↵ Enter</span>
+                                  </div>
+                                )}
+                              </>
+                            );
+                          })()}
+                        </div>
+                      )}
+                    </div>
+
                     <button
                       type="button"
                       onClick={getCurrentLocation}
-                      className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
-                      title="Use Current Location"
+                      className="p-2.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors border border-blue-200 shrink-0"
+                      title="Use Current GPS Location"
                     >
                       <Navigation className="w-5 h-5" />
                     </button>
                   </div>
                 </div>
 
+                {/* Drop Location / Hospital */}
                 <div className="relative">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Drop Location</label>
-                  <input
-                    type="text"
-                    value={bookingForm.dropAddress}
-                    onChange={(e) => {
-                      setBookingForm({...bookingForm, dropAddress: e.target.value});
-                      setShowHospitalSuggestions(true);
-                    }}
-                    onFocus={() => setShowHospitalSuggestions(true)}
-                    onBlur={() => setTimeout(() => setShowHospitalSuggestions(false), 200)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                    placeholder="Search for a hospital or enter address"
-                    required
-                  />
-                  {showHospitalSuggestions && hospitals.length > 0 && (
-                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                      <div className="p-2 bg-gray-50 border-b border-gray-100 text-xs font-semibold text-gray-500 uppercase">
-                        Nearest Hospitals ({hospitals.length})
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Drop Location / Hospital
+                  </label>
+
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={bookingForm.dropAddress}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setBookingForm({...bookingForm, dropAddress: val});
+                        setShowHospitalSuggestions(true);
+                        setSelectedHospitalIndex(-1);
+                        // Live search from MongoDB database
+                        triggerDBSearch(val);
+                      }}
+                      onFocus={() => setShowHospitalSuggestions(true)}
+                      onBlur={() => {
+                        setTimeout(() => setShowHospitalSuggestions(false), 250);
+                      }}
+                      onKeyDown={(e) => {
+                        const filtered = getFilteredHospitalSuggestions();
+                        if (e.key === 'ArrowDown') {
+                          e.preventDefault();
+                          setSelectedHospitalIndex(prev => (prev < filtered.length - 1 ? prev + 1 : 0));
+                        } else if (e.key === 'ArrowUp') {
+                          e.preventDefault();
+                          setSelectedHospitalIndex(prev => (prev > 0 ? prev - 1 : filtered.length - 1));
+                        } else if (e.key === 'Enter') {
+                          e.preventDefault();
+                          if (selectedHospitalIndex >= 0 && selectedHospitalIndex < filtered.length) {
+                            handleHospitalSelect(filtered[selectedHospitalIndex]);
+                          } else if (filtered.length > 0 && bookingForm.dropAddress.trim()) {
+                            handleHospitalSelect(filtered[0]);
+                          } else {
+                            handleGeocodeAddress(bookingForm.dropAddress, 'drop');
+                            setShowHospitalSuggestions(false);
+                          }
+                        } else if (e.key === 'Escape') {
+                          setShowHospitalSuggestions(false);
+                        }
+                      }}
+                      className="w-full pl-9 pr-8 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent shadow-sm"
+                      placeholder="Search hospital (e.g. Kiran, Civil, Sunshine, BAPS, Apple, Shelby)"
+                      required
+                      autoComplete="off"
+                    />
+                    <Building2 className="w-4 h-4 text-red-500 absolute left-3 top-3.5 pointer-events-none" />
+
+                    {bookingForm.dropAddress && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setBookingForm({ ...bookingForm, dropAddress: '' });
+                          setShowHospitalSuggestions(true);
+                        }}
+                        className="absolute right-2.5 top-3 text-gray-400 hover:text-gray-600 p-0.5 rounded-full hover:bg-gray-100"
+                        title="Clear search"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Dropdown Suggestions List */}
+                  {showHospitalSuggestions && (
+                    <div className="absolute z-30 w-full min-w-[320px] mt-1.5 bg-white/95 backdrop-blur-sm border border-slate-200 rounded-2xl shadow-2xl max-h-80 overflow-y-auto custom-scrollbar divide-y divide-slate-100 ring-1 ring-black/5 animate-in fade-in-50 duration-150">
+                      {/* Header */}
+                      <div className="px-3 py-2 bg-gradient-to-r from-rose-50/90 via-red-50/60 to-amber-50/50 border-b border-rose-100 text-[11px] font-semibold text-rose-900 flex items-center justify-between sticky top-0 z-10 backdrop-blur-md">
+                        <span className="flex items-center gap-1.5">
+                          <Building2 className="w-3.5 h-3.5 text-red-600 shrink-0" />
+                          <span>{bookingForm.dropAddress.trim() ? `Matching Hospitals` : 'Surat Hospitals & Clinics'}</span>
+                          {isSearchingDB && (
+                            <span className="inline-flex items-center gap-1 text-[10px] text-amber-700 font-medium bg-amber-100/70 px-1.5 py-0.5 rounded-full animate-pulse">
+                              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping" />
+                              Searching...
+                            </span>
+                          )}
+                        </span>
+                        <span className="text-[10px] text-slate-600 bg-white/90 px-2 py-0.5 rounded-full border border-rose-200/60 shadow-2xs font-medium">
+                          {getFilteredHospitalSuggestions().length} found
+                        </span>
                       </div>
+
                       {(() => {
-                        const filteredHospitals = hospitals.filter(hospital => 
-                          !bookingForm.dropAddress || 
-                          bookingForm.dropAddress.trim() === '' ||
-                          hospital.name.toLowerCase().includes(bookingForm.dropAddress.toLowerCase()) ||
-                          hospital.address?.toLowerCase().includes(bookingForm.dropAddress.toLowerCase()) ||
-                          hospital.specialties?.some(spec => spec.toLowerCase().includes(bookingForm.dropAddress.toLowerCase()))
-                        );
-                        
-                        if (filteredHospitals.length === 0) {
+                        const filtered = getFilteredHospitalSuggestions();
+                        if (filtered.length === 0) {
                           return (
-                            <div className="p-3 text-center text-gray-500 text-sm">
-                              No hospitals found matching "{bookingForm.dropAddress}"
+                            <div className="p-4 text-center">
+                              <p className="text-xs text-gray-600 mb-2.5">
+                                No hospital found matching "<strong>{bookingForm.dropAddress}</strong>"
+                              </p>
+                              <button
+                                type="button"
+                                onMouseDown={(e) => {
+                                  e.preventDefault();
+                                  handleCustomSearchInSurat(bookingForm.dropAddress);
+                                }}
+                                disabled={isSearchingLocation}
+                                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-medium rounded-xl shadow-md transition-colors"
+                              >
+                                <Search className="w-3.5 h-3.5" />
+                                {isSearchingLocation ? 'Searching Map...' : `Search "${bookingForm.dropAddress}" on Map`}
+                              </button>
                             </div>
                           );
                         }
-                        
-                        return filteredHospitals.map((hospital) => (
-                          <div
-                            key={hospital._id}
-                            onClick={() => handleHospitalSelect(hospital)}
-                            className="p-3 hover:bg-red-50 cursor-pointer transition-colors border-b border-gray-50 last:border-0"
-                          >
-                            <div className="font-medium text-gray-900">{hospital.name}</div>
-                            <div className="text-xs text-gray-500 truncate">{hospital.address}</div>
-                            <div className="flex gap-1 mt-1">
-                              {hospital.specialties && hospital.specialties.slice(0, 2).map((spec, idx) => (
-                                <span key={idx} className="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded">
-                                  {spec}
+
+                        return (
+                          <>
+                            {filtered.slice(0, 12).map((hospital, idx) => {
+                              const isSelected = selectedHospitalIndex === idx;
+                              const isHosp = hospital.isHospital !== false;
+                              return (
+                                <div
+                                  key={hospital.id || hospital._id || idx}
+                                  onMouseDown={(e) => {
+                                    e.preventDefault();
+                                    handleHospitalSelect(hospital);
+                                  }}
+                                  onMouseEnter={() => setSelectedHospitalIndex(idx)}
+                                  className={`p-3 cursor-pointer transition-all flex items-start gap-3 ${
+                                    isSelected
+                                      ? 'bg-red-50/90 border-l-4 border-red-600 pl-2'
+                                      : 'hover:bg-slate-50/90'
+                                  }`}
+                                >
+                                  <div className={`p-2 rounded-xl shrink-0 mt-0.5 border ${
+                                    isHosp
+                                      ? (isSelected ? 'bg-red-600 text-white border-red-600 shadow-sm' : 'bg-red-50 text-red-600 border-red-100')
+                                      : (isSelected ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-blue-50 text-blue-600 border-blue-100')
+                                  }`}>
+                                    {isHosp ? (
+                                      <Building2 className="w-4 h-4" />
+                                    ) : (
+                                      <MapPin className="w-4 h-4" />
+                                    )}
+                                  </div>
+
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center justify-between gap-2">
+                                      <div className="font-semibold text-xs text-slate-900 truncate" title={hospital.name}>
+                                        {hospital.name}
+                                      </div>
+                                      {hospital.distanceKm !== undefined && (
+                                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 shrink-0 border border-emerald-200">
+                                          {hospital.distanceKm < 1
+                                            ? `${(hospital.distanceKm * 1000).toFixed(0)} m`
+                                            : `${hospital.distanceKm.toFixed(1)} km`}
+                                        </span>
+                                      )}
+                                    </div>
+
+                                    <div className="text-[11px] text-slate-500 truncate mt-0.5 flex items-center gap-1" title={hospital.address}>
+                                      <MapPin className="w-3 h-3 shrink-0 text-slate-400" />
+                                      <span>{hospital.address}</span>
+                                    </div>
+
+                                    {hospital.specialties && hospital.specialties.length > 0 && (
+                                      <div className="flex flex-wrap gap-1 mt-1.5">
+                                        {hospital.specialties.slice(0, 2).map((spec, sIdx) => (
+                                          <span
+                                            key={sIdx}
+                                            className="text-[9px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded-md font-medium border border-slate-200/60"
+                                          >
+                                            {spec}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+
+                            {bookingForm.dropAddress.trim() && (
+                              <div
+                                onMouseDown={(e) => {
+                                  e.preventDefault();
+                                  handleCustomSearchInSurat(bookingForm.dropAddress);
+                                }}
+                                className="p-2.5 bg-slate-50/80 hover:bg-slate-100/90 cursor-pointer text-xs text-blue-600 flex items-center justify-between font-medium border-t border-slate-100 transition-colors"
+                              >
+                                <span className="flex items-center gap-1.5">
+                                  <Search className="w-3.5 h-3.5 text-blue-500" />
+                                  Search "{bookingForm.dropAddress}" across Map
                                 </span>
-                              ))}
-                            </div>
-                          </div>
-                        ));
+                                <span className="text-[10px] text-slate-400 bg-white px-1.5 py-0.5 rounded border border-slate-200">↵ Enter</span>
+                              </div>
+                            )}
+                          </>
+                        );
                       })()}
                     </div>
                   )}
@@ -868,23 +1627,36 @@ export const PatientDashboard = () => {
                 </div>
 
                 {estimatedFare && (
-                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-gray-600">Estimated Distance</span>
-                      <span className="font-semibold">{estimatedFare.distance} km</span>
+                  <div className="bg-gradient-to-r from-red-50/90 via-orange-50/70 to-rose-50/80 p-4 rounded-2xl border border-red-200/80 shadow-sm">
+                    <div className="flex justify-between items-center pb-2.5 border-b border-red-100/90">
+                      <span className="text-xs font-semibold text-gray-700 flex items-center gap-1.5">
+                        <Navigation className="w-3.5 h-3.5 text-red-600" />
+                        Estimated Distance
+                      </span>
+                      <span className="font-bold text-sm text-red-700 bg-white px-2.5 py-0.5 rounded-full border border-red-200 shadow-2xs">
+                        {estimatedFare.distance} km
+                      </span>
                     </div>
-                    <div className="flex justify-between items-center text-lg font-bold text-gray-900">
-                      <span>Total Fare</span>
-                      <span>₹{estimatedFare.fare}</span>
+                    <div className="flex justify-between items-center pt-2.5 text-gray-900">
+                      <div>
+                        <span className="text-xs text-gray-500 font-medium block">Total Estimated Fare</span>
+                        <span className="text-[10px] text-emerald-700 font-semibold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 inline-block mt-0.5">
+                          Pay on Drop (Cash / Online)
+                        </span>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-2xl font-black text-red-600">₹{estimatedFare.fare}</span>
+                      </div>
                     </div>
                   </div>
                 )}
 
                 <button
                   type="submit"
-                  className="w-full bg-red-600 text-white py-3 rounded-lg font-semibold hover:bg-red-700 transition-colors shadow-lg shadow-red-200"
+                  className="w-full bg-red-600 text-white py-3.5 rounded-xl font-semibold hover:bg-red-700 transition-colors shadow-lg shadow-red-200 flex items-center justify-center gap-2"
                 >
-                  Confirm Booking
+                  <Ambulance className="w-5 h-5" />
+                  Confirm Booking • ₹{estimatedFare?.fare || 200}
                 </button>
               </form>
             </div>
@@ -903,18 +1675,39 @@ export const PatientDashboard = () => {
                   address: bookingForm.dropAddress
                 }}
                 driverLocation={driverLocation}
+                onPickupChange={handlePickupChangeFromMap}
+                onDropChange={handleDropChangeFromMap}
+                showRoute={true}
               />
               
-              <div className="mt-4 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-                <h3 className="font-semibold text-gray-900 mb-2">Location Details</h3>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <p className="text-gray-500">Pickup Coordinates</p>
-                    <p className="font-mono text-gray-700">{bookingForm.pickupLat.toFixed(4)}, {bookingForm.pickupLng.toFixed(4)}</p>
+              <div className="mt-4 bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-semibold text-gray-900 flex items-center gap-1.5 text-sm">
+                    <MapPin className="w-4 h-4 text-red-500" />
+                    Trip & Location Summary
+                  </h3>
+                  {estimatedFare && (
+                    <span className="text-xs font-bold text-red-700 bg-red-50 px-3 py-1 rounded-full border border-red-200">
+                      📍 {estimatedFare.distance} km • ₹{estimatedFare.fare}
+                    </span>
+                  )}
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                  <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                    <p className="text-gray-500 font-medium">Pickup Coordinates</p>
+                    <p className="font-mono text-gray-800 font-semibold mt-0.5">{bookingForm.pickupLat.toFixed(4)}, {bookingForm.pickupLng.toFixed(4)}</p>
                   </div>
-                  <div>
-                    <p className="text-gray-500">Drop Coordinates</p>
-                    <p className="font-mono text-gray-700">{bookingForm.dropLat.toFixed(4)}, {bookingForm.dropLng.toFixed(4)}</p>
+                  <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                    <p className="text-gray-500 font-medium">Drop Coordinates</p>
+                    <p className="font-mono text-gray-800 font-semibold mt-0.5">{bookingForm.dropLat.toFixed(4)}, {bookingForm.dropLng.toFixed(4)}</p>
+                  </div>
+                  <div className="bg-red-50/80 p-2.5 rounded-xl border border-red-100">
+                    <p className="text-red-600 font-medium">Trip Distance</p>
+                    <p className="font-bold text-red-700 text-sm mt-0.5">{estimatedFare?.distance || '0.00'} km</p>
+                  </div>
+                  <div className="bg-emerald-50/80 p-2.5 rounded-xl border border-emerald-100">
+                    <p className="text-emerald-700 font-medium">Estimated Fare</p>
+                    <p className="font-bold text-emerald-800 text-sm mt-0.5">₹{estimatedFare?.fare || 0}</p>
                   </div>
                 </div>
               </div>

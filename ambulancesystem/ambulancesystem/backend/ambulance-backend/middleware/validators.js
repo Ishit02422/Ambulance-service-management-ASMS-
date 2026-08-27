@@ -53,21 +53,21 @@ const registerValidation = [
     .isIn(['patient', 'driver'])
     .withMessage('Role must be either patient or driver'),
   body('address')
-    .optional()
+    .optional({ checkFalsy: true })
     .trim()
-    .isLength({ min: 10, max: 500 })
-    .withMessage('Address must be between 10 and 500 characters'),
+    .isLength({ min: 3, max: 500 })
+    .withMessage('Address must be between 3 and 500 characters'),
   // Driver-specific validations
   body('licenseNumber')
     .if(body('role').equals('driver'))
     .trim()
-    .matches(/^[A-Z0-9]{16}$/)
-    .withMessage('License number must be exactly 16 alphanumeric characters'),
+    .matches(/^[A-Za-z0-9\s-]{6,20}$/)
+    .withMessage('License number must be between 6 and 20 alphanumeric characters'),
   body('vehicleNumber')
     .if(body('role').equals('driver'))
     .trim()
-    .matches(/^[A-Z]{2}-[0-9]{2}-[A-Z]{2}-[0-9]{4}$/)
-    .withMessage('Vehicle number format must be XX-00-XX-0000'),
+    .matches(/^[A-Za-z0-9\s-]{6,15}$/)
+    .withMessage('Vehicle number must be a valid vehicle registration number (e.g. GJ-05-AB-1234)'),
   body('ambulanceType')
     .if(body('role').equals('driver'))
     .isIn(['Normal', 'ICU', 'Cardiac', 'DeadBodyVan'])
@@ -194,10 +194,10 @@ const updateProfileValidation = [
   validatePhone
     .optional(),
   body('address')
-    .optional()
+    .optional({ checkFalsy: true })
     .trim()
-    .isLength({ min: 10, max: 500 })
-    .withMessage('Address must be between 10 and 500 characters'),
+    .isLength({ min: 3, max: 500 })
+    .withMessage('Address must be between 3 and 500 characters'),
   body('oldPassword')
     .optional()
     .trim()

@@ -54,7 +54,11 @@ export const api = {
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.message || 'Registration failed');
+      let errorMsg = data.message || 'Registration failed';
+      if (data.errors && Array.isArray(data.errors) && data.errors.length > 0) {
+        errorMsg = data.errors.map(err => err.message).join(' | ');
+      }
+      throw new Error(errorMsg);
     }
 
     if (data.token) {
@@ -245,19 +249,21 @@ export const api = {
     return response.json();
   },
 
-  // HOSPITAL ENDPOINTS
-  async getNearestHospitals(lat, lng) {
-    const response = await fetch(`${API_URL}/hospitals/nearest?lat=${lat}&lng=${lng}`, {
-      headers: getAuthHeader(),
-    });
+  async getAllHospitals(search = '') {
+    const queryParam = search ? `?search=${encodeURIComponent(search)}` : '';
+    const response = await fetch(`${API_URL}/hospitals${queryParam}`);
+    if (!response.ok) throw new Error('Failed to fetch hospitals');
+    return response.json();
+  },
+
+  async getNearestHospitals(lat, lng, limit = 30) {
+    const response = await fetch(`${API_URL}/hospitals/nearest?lat=${lat}&lng=${lng}&limit=${limit}`);
     if (!response.ok) throw new Error('Failed to fetch hospitals');
     return response.json();
   },
 
   async searchHospitals(query) {
-    const response = await fetch(`${API_URL}/hospitals/search?query=${query}`, {
-      headers: getAuthHeader(),
-    });
+    const response = await fetch(`${API_URL}/hospitals/search?query=${encodeURIComponent(query)}`);
     if (!response.ok) throw new Error('Failed to search hospitals');
     return response.json();
   },
@@ -604,5 +610,33 @@ export const api = {
     });
     if (!response.ok) throw new Error('Failed to fetch payout stats');
     return response.json();
+  },
+
+  // USER PROFILE ENDPOINTS
+  async getProfile() {
+    const response = await fetch(`${API_URL}/auth/profile`, {
+      headers: getAuthHeader(),
+    });
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      throw new Error(data.message || 'Failed to fetch profile');
+    }
+    return response.json();
+  },
+
+  async updateProfile(profileData) {
+    const response = await fetch(`${API_URL}/auth/profile`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader(),
+      },
+      body: JSON.stringify(profileData),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to update profile');
+    }
+    return data;
   },
 };

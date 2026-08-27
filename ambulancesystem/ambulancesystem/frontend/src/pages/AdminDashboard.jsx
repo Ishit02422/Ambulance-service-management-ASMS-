@@ -1356,7 +1356,7 @@ export const AdminDashboard = () => {
               <h2 className="text-xl font-bold text-gray-900 mb-4">🌍 God Mode - Global Live Map</h2>
               <p className="text-sm text-gray-600 mb-4">Real-time view of all ambulances in the system</p>
               <div className="h-[600px] rounded-lg overflow-hidden">
-                <GodModeMap drivers={allDrivers} />
+                <GodModeMap drivers={allDrivers} bookings={bookings} />
               </div>
             </div>
           </div>

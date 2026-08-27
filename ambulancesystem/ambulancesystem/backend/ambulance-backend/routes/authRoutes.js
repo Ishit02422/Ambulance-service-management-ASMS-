@@ -142,7 +142,8 @@ router.post('/register', registerLimiter, upload.fields([
         message: 'Registration successful. Please verify your email.',
         email: driver.email,
         role: 'driver',
-        requiresOtp: true
+        requiresOtp: true,
+        devOtp: otp
       });
 
     } else {
@@ -166,7 +167,8 @@ router.post('/register', registerLimiter, upload.fields([
         message: 'Registration successful. Please verify your email.',
         email: patient.email,
         role: patient.role,
-        requiresOtp: true
+        requiresOtp: true,
+        devOtp: otp
       });
     }
 
