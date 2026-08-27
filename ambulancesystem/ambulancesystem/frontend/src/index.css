@@ -10,15 +10,15 @@
   height: 5px;
 }
 .custom-scrollbar::-webkit-scrollbar-track {
-  background: rgba(241, 245, 249, 0.6);
+  background: rgba(20, 20, 30, 0.6);
   border-radius: 8px;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(203, 213, 225, 0.8);
+  background: rgba(124, 58, 237, 0.4);
   border-radius: 8px;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(148, 163, 184, 1);
+  background: rgba(139, 92, 246, 0.7);
 }
 
 /* =====================================================
@@ -314,6 +314,270 @@
   transition: color 0.2s;
 }
 .auth-footer button:hover { color: #a78bfa; }
+
+/* =====================================================
+   DASHBOARD ROOT — Dark Purple Theme
+   ===================================================== */
+
+.dashboard-root {
+  background: #0a0a0f !important;
+  color: #e2e8f0 !important;
+  font-family: 'Inter', sans-serif;
+  position: relative;
+  min-height: 100vh;
+}
+
+/* Ambient glow */
+.dashboard-root::before {
+  content: '';
+  position: fixed;
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(124, 58, 237, 0.12), transparent 70%);
+  top: -100px;
+  right: -100px;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+}
+.dashboard-root::after {
+  content: '';
+  position: fixed;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(219, 39, 119, 0.08), transparent 70%);
+  bottom: -100px;
+  left: -100px;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Header */
+.dashboard-root header {
+  background: rgba(10, 10, 15, 0.85) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5) !important;
+  position: sticky;
+  top: 0;
+  z-index: 1001;
+}
+
+.dashboard-root header .text-gray-900 {
+  background: linear-gradient(135deg, #fff 30%, #a78bfa) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+  font-weight: 800 !important;
+}
+
+.dashboard-root header .bg-red-100 {
+  background: rgba(124, 58, 237, 0.2) !important;
+  border: 1px solid rgba(124, 58, 237, 0.4) !important;
+}
+
+.dashboard-root header .text-gray-700 {
+  color: #94a3b8 !important;
+}
+
+/* Nav Tabs */
+.dashboard-root header button.bg-red-100 {
+  background: linear-gradient(135deg, #7c3aed, #6d28d9) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 15px rgba(124, 58, 237, 0.45) !important;
+  font-weight: 600 !important;
+}
+.dashboard-root header button.text-gray-600 {
+  color: #94a3b8 !important;
+  background: transparent !important;
+}
+.dashboard-root header button.text-gray-600:hover {
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+.dashboard-root header .text-gray-500 {
+  color: #94a3b8 !important;
+}
+.dashboard-root header .text-gray-500:hover {
+  color: #a78bfa !important;
+}
+
+/* Main Cards */
+.dashboard-root .bg-white {
+  background: rgba(255, 255, 255, 0.035) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4) !important;
+  color: #e2e8f0 !important;
+}
+
+.dashboard-root .bg-gray-50 {
+  background: rgba(255, 255, 255, 0.02) !important;
+}
+
+.dashboard-root .hover\:bg-gray-50:hover {
+  background: rgba(124, 58, 237, 0.08) !important;
+}
+
+/* Typography in Dashboard */
+.dashboard-root .text-gray-900,
+.dashboard-root .text-slate-900 {
+  color: #f8fafc !important;
+}
+.dashboard-root .text-gray-700,
+.dashboard-root .text-gray-600,
+.dashboard-root .text-slate-600,
+.dashboard-root .text-slate-500 {
+  color: #94a3b8 !important;
+}
+.dashboard-root .text-gray-500,
+.dashboard-root .text-slate-400 {
+  color: #64748b !important;
+}
+
+/* Borders & Dividers */
+.dashboard-root .border,
+.dashboard-root .border-b,
+.dashboard-root .border-t,
+.dashboard-root .border-gray-100,
+.dashboard-root .border-gray-200,
+.dashboard-root .border-gray-300,
+.dashboard-root .border-slate-100,
+.dashboard-root .border-slate-200,
+.dashboard-root .divide-gray-100 > * + *,
+.dashboard-root .divide-slate-100 > * + * {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Form Inputs */
+.dashboard-root input[type="text"],
+.dashboard-root input[type="date"],
+.dashboard-root input[type="email"],
+.dashboard-root input[type="password"],
+.dashboard-root select,
+.dashboard-root textarea {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  color: #f8fafc !important;
+  border-radius: 10px !important;
+}
+.dashboard-root input::placeholder,
+.dashboard-root textarea::placeholder {
+  color: #475569 !important;
+}
+.dashboard-root input:focus,
+.dashboard-root select:focus,
+.dashboard-root textarea:focus {
+  border-color: rgba(139, 92, 246, 0.7) !important;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2) !important;
+  outline: none !important;
+}
+.dashboard-root select option {
+  background: #12111c !important;
+  color: #f8fafc !important;
+}
+
+/* Buttons in Dashboard */
+.dashboard-root button.bg-red-600,
+.dashboard-root button.bg-blue-600 {
+  background: linear-gradient(135deg, #7c3aed, #6d28d9) !important;
+  color: #fff !important;
+  box-shadow: 0 4px 18px rgba(124, 58, 237, 0.45) !important;
+  border: none !important;
+  transition: all 0.22s ease !important;
+}
+.dashboard-root button.bg-red-600:hover,
+.dashboard-root button.bg-blue-600:hover {
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed) !important;
+  box-shadow: 0 6px 24px rgba(124, 58, 237, 0.6) !important;
+  transform: translateY(-1px) !important;
+}
+
+.dashboard-root button.bg-green-600 {
+  background: linear-gradient(135deg, #10b981, #059669) !important;
+  color: #fff !important;
+  box-shadow: 0 4px 18px rgba(16, 185, 129, 0.4) !important;
+}
+.dashboard-root button.bg-green-600:hover {
+  background: linear-gradient(135deg, #34d399, #10b981) !important;
+  box-shadow: 0 6px 24px rgba(16, 185, 129, 0.55) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Ambulance Type Cards */
+.dashboard-root .border-red-500.bg-red-50 {
+  border-color: rgba(139, 92, 246, 0.8) !important;
+  background: rgba(124, 58, 237, 0.15) !important;
+  box-shadow: 0 0 20px rgba(124, 58, 237, 0.25) !important;
+}
+.dashboard-root .bg-red-500 {
+  background: #8b5cf6 !important;
+}
+
+/* Ambulance Icons & Badges */
+.dashboard-root .bg-red-100 {
+  background: rgba(124, 58, 237, 0.18) !important;
+  border: 1px solid rgba(124, 58, 237, 0.35) !important;
+}
+.dashboard-root .text-red-600 {
+  color: #a78bfa !important;
+}
+
+/* Status Badges */
+.dashboard-root .bg-green-100 {
+  background: rgba(34, 197, 94, 0.15) !important;
+  border: 1px solid rgba(34, 197, 94, 0.3) !important;
+  color: #86efac !important;
+}
+.dashboard-root .text-green-700,
+.dashboard-root .text-green-600 {
+  color: #86efac !important;
+}
+.dashboard-root .bg-yellow-100 {
+  background: rgba(234, 179, 8, 0.15) !important;
+  border: 1px solid rgba(234, 179, 8, 0.3) !important;
+  color: #fde047 !important;
+}
+.dashboard-root .text-yellow-700 {
+  color: #fde047 !important;
+}
+.dashboard-root .bg-blue-100 {
+  background: rgba(59, 130, 246, 0.15) !important;
+  border: 1px solid rgba(59, 130, 246, 0.3) !important;
+  color: #93c5fd !important;
+}
+.dashboard-root .text-blue-700,
+.dashboard-root .text-blue-600 {
+  color: #93c5fd !important;
+}
+
+/* Re-book & Cancel Buttons */
+.dashboard-root button.bg-red-50 {
+  background: rgba(239, 68, 68, 0.12) !important;
+  border: 1px solid rgba(239, 68, 68, 0.25) !important;
+  color: #fca5a5 !important;
+}
+.dashboard-root button.bg-red-50:hover {
+  background: rgba(239, 68, 68, 0.22) !important;
+}
+
+/* Autocomplete / Suggestions Dropdown */
+.dashboard-root .bg-white\/95 {
+  background: rgba(15, 15, 25, 0.98) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  backdrop-filter: blur(24px) !important;
+  -webkit-backdrop-filter: blur(24px) !important;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8) !important;
+}
+.dashboard-root .hover\:bg-slate-50\/90:hover {
+  background: rgba(124, 58, 237, 0.15) !important;
+}
+.dashboard-root .bg-slate-50\/80 {
+  background: rgba(255, 255, 255, 0.04) !important;
+}
 
 /* Responsive */
 @media (max-width: 560px) {
