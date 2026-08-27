@@ -1627,25 +1627,25 @@ export const PatientDashboard = () => {
                 </div>
 
                 {estimatedFare && (
-                  <div className="bg-gradient-to-r from-red-50/90 via-orange-50/70 to-rose-50/80 p-4 rounded-2xl border border-red-200/80 shadow-sm">
-                    <div className="flex justify-between items-center pb-2.5 border-b border-red-100/90">
-                      <span className="text-xs font-semibold text-gray-700 flex items-center gap-1.5">
-                        <Navigation className="w-3.5 h-3.5 text-red-600" />
+                  <div className="bg-gradient-to-br from-purple-900/30 via-slate-900/60 to-indigo-950/40 p-4 rounded-2xl border border-purple-500/30 shadow-lg shadow-purple-950/30 backdrop-blur-md">
+                    <div className="flex justify-between items-center pb-3 border-b border-purple-500/20">
+                      <span className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                        <Navigation className="w-4 h-4 text-purple-400" />
                         Estimated Distance
                       </span>
-                      <span className="font-bold text-sm text-red-700 bg-white px-2.5 py-0.5 rounded-full border border-red-200 shadow-2xs">
+                      <span className="font-bold text-xs text-purple-200 bg-purple-500/20 px-3 py-1 rounded-full border border-purple-400/30">
                         {estimatedFare.distance} km
                       </span>
                     </div>
-                    <div className="flex justify-between items-center pt-2.5 text-gray-900">
+                    <div className="flex justify-between items-center pt-3">
                       <div>
-                        <span className="text-xs text-gray-500 font-medium block">Total Estimated Fare</span>
-                        <span className="text-[10px] text-emerald-700 font-semibold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 inline-block mt-0.5">
-                          Pay on Drop (Cash / Online)
+                        <span className="text-xs text-slate-400 font-medium block">Total Estimated Fare</span>
+                        <span className="text-[10px] text-emerald-400 font-semibold bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/30 inline-block mt-1">
+                          ✓ Pay on Drop (Cash / Online)
                         </span>
                       </div>
                       <div className="text-right">
-                        <span className="text-2xl font-black text-red-600">₹{estimatedFare.fare}</span>
+                        <span className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-amber-300">₹{estimatedFare.fare}</span>
                       </div>
                     </div>
                   </div>
@@ -1680,34 +1680,34 @@ export const PatientDashboard = () => {
                 showRoute={true}
               />
               
-              <div className="mt-4 bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+              <div className="mt-4 bg-slate-900/40 p-4 rounded-2xl shadow-md border border-white/10 backdrop-blur-md">
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-semibold text-gray-900 flex items-center gap-1.5 text-sm">
-                    <MapPin className="w-4 h-4 text-red-500" />
+                  <h3 className="font-semibold text-slate-200 flex items-center gap-1.5 text-sm">
+                    <MapPin className="w-4 h-4 text-purple-400" />
                     Trip & Location Summary
                   </h3>
                   {estimatedFare && (
-                    <span className="text-xs font-bold text-red-700 bg-red-50 px-3 py-1 rounded-full border border-red-200">
+                    <span className="text-xs font-bold text-purple-300 bg-purple-500/20 px-3 py-1 rounded-full border border-purple-500/30">
                       📍 {estimatedFare.distance} km • ₹{estimatedFare.fare}
                     </span>
                   )}
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
-                  <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
-                    <p className="text-gray-500 font-medium">Pickup Coordinates</p>
-                    <p className="font-mono text-gray-800 font-semibold mt-0.5">{bookingForm.pickupLat.toFixed(4)}, {bookingForm.pickupLng.toFixed(4)}</p>
+                  <div className="bg-white/5 p-2.5 rounded-xl border border-white/5">
+                    <p className="text-slate-400 font-medium">Pickup Coordinates</p>
+                    <p className="font-mono text-slate-200 font-semibold mt-0.5">{bookingForm.pickupLat.toFixed(4)}, {bookingForm.pickupLng.toFixed(4)}</p>
                   </div>
-                  <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
-                    <p className="text-gray-500 font-medium">Drop Coordinates</p>
-                    <p className="font-mono text-gray-800 font-semibold mt-0.5">{bookingForm.dropLat.toFixed(4)}, {bookingForm.dropLng.toFixed(4)}</p>
+                  <div className="bg-white/5 p-2.5 rounded-xl border border-white/5">
+                    <p className="text-slate-400 font-medium">Drop Coordinates</p>
+                    <p className="font-mono text-slate-200 font-semibold mt-0.5">{bookingForm.dropLat.toFixed(4)}, {bookingForm.dropLng.toFixed(4)}</p>
                   </div>
-                  <div className="bg-red-50/80 p-2.5 rounded-xl border border-red-100">
-                    <p className="text-red-600 font-medium">Trip Distance</p>
-                    <p className="font-bold text-red-700 text-sm mt-0.5">{estimatedFare?.distance || '0.00'} km</p>
+                  <div className="bg-purple-500/10 p-2.5 rounded-xl border border-purple-500/20">
+                    <p className="text-purple-300 font-medium">Trip Distance</p>
+                    <p className="font-bold text-purple-200 text-sm mt-0.5">{estimatedFare?.distance || '0.00'} km</p>
                   </div>
-                  <div className="bg-emerald-50/80 p-2.5 rounded-xl border border-emerald-100">
-                    <p className="text-emerald-700 font-medium">Estimated Fare</p>
-                    <p className="font-bold text-emerald-800 text-sm mt-0.5">₹{estimatedFare?.fare || 0}</p>
+                  <div className="bg-emerald-500/10 p-2.5 rounded-xl border border-emerald-500/20">
+                    <p className="text-emerald-300 font-medium">Estimated Fare</p>
+                    <p className="font-bold text-emerald-200 text-sm mt-0.5">₹{estimatedFare?.fare || 0}</p>
                   </div>
                 </div>
               </div>
