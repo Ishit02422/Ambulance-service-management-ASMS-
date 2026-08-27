@@ -8,10 +8,13 @@ import { PatientDashboard } from './pages/PatientDashboard';
 import { DriverDashboard } from './pages/DriverDashboard';
 import { AdminDashboard } from './pages/AdminDashboard';
 import { ResetPassword } from './pages/ResetPassword';
+import { LandingPage } from './pages/LandingPage';
+
+type View = 'landing' | 'login' | 'register';
 
 function AppContent() {
   const { user } = useAuth();
-  const [showRegister, setShowRegister] = useState(false);
+  const [view, setView] = useState<View>('landing');
 
   // If user is logged in, show dashboard
   if (user) {
@@ -25,10 +28,15 @@ function AppContent() {
     <Routes>
       <Route path="/reset-password/:token" element={<ResetPassword />} />
       <Route path="/" element={
-        showRegister ? (
-          <Register onToggleLogin={() => setShowRegister(false)} />
+        view === 'landing' ? (
+          <LandingPage
+            onGetStarted={() => setView('register')}
+            onSignIn={() => setView('login')}
+          />
+        ) : view === 'register' ? (
+          <Register onToggleLogin={() => setView('login')} />
         ) : (
-          <Login onToggleRegister={() => setShowRegister(true)} />
+          <Login onToggleRegister={() => setView('register')} />
         )
       } />
       <Route path="*" element={<Navigate to="/" />} />
