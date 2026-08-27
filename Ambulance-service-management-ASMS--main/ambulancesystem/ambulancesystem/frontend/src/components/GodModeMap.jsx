@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
@@ -42,7 +42,47 @@ const createAmbulanceIcon = (type, isOnline) => {
   });
 };
 
-export const GodModeMap = ({ drivers }) => {
+const DriverRoute = ({ start, end, color }) => {
+  const [routeCoords, setRouteCoords] = useState([]);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchRoute = async () => {
+      try {
+        // start and end are [lng, lat] from MongoDB
+        const url = `https://router.project-osrm.org/route/v1/driving/${start[0]},${start[1]};${end[0]},${end[1]}?overview=simplified&geometries=geojson`;
+        const res = await fetch(url);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.routes && data.routes.length > 0 && isMounted) {
+            const coordinates = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]); // [lat, lng] for Leaflet
+            setRouteCoords(coordinates);
+          }
+        }
+      } catch (err) {
+        console.warn('OSRM routing fallback:', err);
+        if (isMounted) {
+          setRouteCoords([[start[1], start[0]], [end[1], end[0]]]);
+        }
+      }
+    };
+    if (start && end) {
+      fetchRoute();
+    }
+    return () => { isMounted = false; };
+  }, [start, end]);
+
+  if (!routeCoords || routeCoords.length === 0) return null;
+
+  return (
+    <Polyline 
+      positions={routeCoords} 
+      pathOptions={{ color: color || '#3b82f6', weight: 4, opacity: 0.7, dashArray: '10, 10' }} 
+    />
+  );
+};
+
+export const GodModeMap = ({ drivers, bookings = [] }) => {
   const suratCenter = [21.1702, 72.8311];
   const [mapType, setMapType] = useState('roadmap');
 
@@ -80,9 +120,15 @@ export const GodModeMap = ({ drivers }) => {
       coordinates = generateRandomSuratLocation(index);
     }
     
+    const activeBooking = bookings.find(b => 
+      (b.driverId?._id === driver._id || b.driverId === driver._id) && 
+      ['accepted', 'assigned', 'on_the_way', 'reached', 'picked', 'in_progress'].includes(b.status)
+    );
+
     return {
       ...driver,
-      displayLocation: coordinates
+      displayLocation: coordinates,
+      activeBooking: activeBooking || driver.currentBooking
     };
   });
 
@@ -142,10 +188,10 @@ export const GodModeMap = ({ drivers }) => {
                       <span className="font-medium">Rating:</span>
                       <span>{driver.rating || 0} ⭐</span>
                     </div>
-                    {driver.currentBooking && (
+                    {driver.activeBooking && (
                       <div className="mt-2 pt-2 border-t border-gray-200">
                         <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
-                          On Trip
+                          On Trip ({driver.activeBooking.status})
                         </span>
                       </div>
                     )}
@@ -153,6 +199,41 @@ export const GodModeMap = ({ drivers }) => {
                 </div>
               </Popup>
             </Marker>
+          );
+        })}
+
+        {/* Render Routes for Active Bookings */}
+        {processedDrivers.map(driver => {
+          if (!driver.activeBooking || !driver.displayLocation) return null;
+          
+          const booking = driver.activeBooking;
+          const isGoingToDrop = ['picked', 'reached', 'in_progress'].includes(booking.status);
+          
+          // Destination coordinates from booking [lng, lat]
+          const destCoords = isGoingToDrop && booking.dropLocation?.coordinates 
+            ? booking.dropLocation.coordinates 
+            : booking.pickupLocation?.coordinates;
+            
+          if (!destCoords || destCoords.length !== 2 || destCoords[0] === 0) return null;
+
+          // Determine line color based on ambulance type
+          const colorMap = {
+            normal: '#10b981',
+            icu: '#3b82f6',
+            cardiac: '#ef4444',
+            deadbodyvan: '#8b5cf6',
+            dead_body_van: '#8b5cf6'
+          };
+          const type = driver.ambulanceType?.toLowerCase().replace(/\s+/g, '_') || 'normal';
+          const routeColor = colorMap[type] || '#3b82f6';
+
+          return (
+            <DriverRoute 
+              key={`route-${driver._id}`} 
+              start={driver.displayLocation} 
+              end={destCoords} 
+              color={routeColor}
+            />
           );
         })}
       </MapContainer>
