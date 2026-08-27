@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './LandingPage.css';
+import { api } from '../services/api';
 
 interface LandingPageProps {
   onGetStarted: () => void;
@@ -20,23 +21,41 @@ export function LandingPage({ onGetStarted, onSignIn }: LandingPageProps) {
 
   // Animated counters
   useEffect(() => {
-    const targets = { ambulances: 120, hospitals: 48, trips: 3500, years: 10 };
-    const duration = 1800;
-    const steps = 60;
-    const interval = duration / steps;
-    let step = 0;
-    const timer = setInterval(() => {
-      step++;
-      const progress = step / steps;
-      setCounters({
-        ambulances: Math.floor(targets.ambulances * progress),
-        hospitals: Math.floor(targets.hospitals * progress),
-        trips: Math.floor(targets.trips * progress),
-        years: Math.floor(targets.years * progress),
+    let active = true;
+    let timer: NodeJS.Timeout;
+
+    const animateCounters = (targets: { ambulances: number; hospitals: number; trips: number; years: number }) => {
+      const duration = 1800;
+      const steps = 60;
+      const interval = duration / steps;
+      let step = 0;
+      timer = setInterval(() => {
+        if (!active) return;
+        step++;
+        const progress = step / steps;
+        setCounters({
+          ambulances: Math.floor(targets.ambulances * progress),
+          hospitals: Math.floor(targets.hospitals * progress),
+          trips: Math.floor(targets.trips * progress),
+          years: Math.floor(targets.years * progress),
+        });
+        if (step >= steps) clearInterval(timer);
+      }, interval);
+    };
+
+    api.getPublicStats()
+      .then((stats) => {
+        if (active) animateCounters(stats);
+      })
+      .catch((err) => {
+        console.error('Failed to fetch public stats, using fallback:', err);
+        if (active) animateCounters({ ambulances: 120, hospitals: 48, trips: 3500, years: 10 });
       });
-      if (step >= steps) clearInterval(timer);
-    }, interval);
-    return () => clearInterval(timer);
+
+    return () => {
+      active = false;
+      if (timer) clearInterval(timer);
+    };
   }, []);
 
   return (

@@ -21,6 +21,12 @@ const clearCachedUser = () => {
 };
 
 export const api = {
+  async getPublicStats() {
+    const response = await fetch(`${API_URL}/auth/public-stats`);
+    if (!response.ok) throw new Error('Failed to fetch public stats');
+    return response.json();
+  },
+
   async login(email, password) {
     const response = await fetch(`${API_URL}/auth/login`, {
       method: 'POST',
