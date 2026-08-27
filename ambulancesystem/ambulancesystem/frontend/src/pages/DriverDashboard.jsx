@@ -410,7 +410,7 @@ export const DriverDashboard = () => {
       loadBookings(); // Refresh lists
     } catch (error) {
       console.error('Error accepting booking:', error);
-      alert('Failed to accept booking');
+      alert('Failed to accept booking: ' + error.message);
     }
   };
 

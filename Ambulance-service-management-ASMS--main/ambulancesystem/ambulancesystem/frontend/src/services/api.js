@@ -331,7 +331,10 @@ export const api = {
       method: 'PATCH',
       headers: getAuthHeader(),
     });
-    if (!response.ok) throw new Error('Failed to accept booking');
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      throw new Error(data.message || 'Failed to accept booking');
+    }
     return response.json();
   },
 
