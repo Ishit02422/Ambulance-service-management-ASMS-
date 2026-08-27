@@ -24,6 +24,37 @@ const {
 
 const router = express.Router();
 
+// @route GET /api/auth/seed
+router.get('/seed', async (req, res) => {
+  try {
+    const email = 'admin@ambulance.com';
+    const password = 'admin123';
+
+    const existingAdmin = await Patient.findOne({ email });
+    if (existingAdmin) {
+      return res.status(200).json({ message: 'Admin already exists in database', email });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    await Patient.create({
+      name: 'Admin User',
+      email,
+      password: hashedPassword,
+      role: 'admin',
+      phone: '9999999999',
+      address: 'Admin HQ',
+      isVerified: true,
+    });
+
+    return res.status(201).json({ message: 'Admin User Created Successfully', email, password });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Seeding failed', error: err.message });
+  }
+});
+
 const generateToken = (id, role) => {
   return jwt.sign({ id, role }, process.env.JWT_SECRET, {
     expiresIn: '7d',
