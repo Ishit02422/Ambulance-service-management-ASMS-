@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { SocketProvider } from './context/SocketContext';
 import { Login } from './components/Login';
@@ -10,11 +9,9 @@ import { AdminDashboard } from './pages/AdminDashboard';
 import { ResetPassword } from './pages/ResetPassword';
 import { LandingPage } from './pages/LandingPage';
 
-type View = 'landing' | 'login' | 'register';
-
 function AppContent() {
   const { user } = useAuth();
-  const [view, setView] = useState<View>('landing');
+  const navigate = useNavigate();
 
   // If user is logged in, show dashboard
   if (user) {
@@ -23,22 +20,29 @@ function AppContent() {
     return <PatientDashboard />;
   }
 
-  // If not logged in, handle routes
   return (
     <Routes>
-      <Route path="/reset-password/:token" element={<ResetPassword />} />
+      {/* Public routes */}
       <Route path="/" element={
-        view === 'landing' ? (
-          <LandingPage
-            onGetStarted={() => setView('register')}
-            onSignIn={() => setView('login')}
-          />
-        ) : view === 'register' ? (
-          <Register onToggleLogin={() => setView('login')} />
-        ) : (
-          <Login onToggleRegister={() => setView('register')} />
-        )
+        <LandingPage
+          onGetStarted={() => navigate('/register')}
+          onSignIn={() => navigate('/login')}
+        />
       } />
+      <Route path="/login" element={
+        <Login
+          onToggleRegister={() => navigate('/register')}
+          onBack={() => navigate('/')}
+        />
+      } />
+      <Route path="/register" element={
+        <Register
+          onToggleLogin={() => navigate('/login')}
+          onBack={() => navigate('/')}
+        />
+      } />
+      <Route path="/reset-password/:token" element={<ResetPassword />} />
+      {/* Fallback */}
       <Route path="*" element={<Navigate to="/" />} />
     </Routes>
   );
